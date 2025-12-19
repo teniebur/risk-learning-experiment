@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mkturk-v1';
+const CACHE_NAME = 'risk-learning-v1';
 const urlsToCache = [
   './mkturk.html',
   './mkturk_installsettings.js',
@@ -12,7 +12,7 @@ const urlsToCache = [
   './mkturk_automator.js',
   './mkturk_bluetooth.js',
   './mkturk_usb.js',
-  './mkturklogo192.png'
+  './risklearningexperimentlogo.png'
 ];
 
 self.addEventListener('install', event => {
