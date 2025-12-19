@@ -12,7 +12,7 @@ const urlsToCache = [
   './mkturk_automator.js',
   './mkturk_bluetooth.js',
   './mkturk_usb.js',
-  './risklearningexperimentlogo.png'
+  './risklearningexperimentlogo192.png'
 ];
 
 self.addEventListener('install', event => {
