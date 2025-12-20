@@ -15,12 +15,13 @@ let params = {};
 // Load your parameter file
 async function loadParameters() {
     try {
-        const response = await fetch('RiskLearningSubject_params.txt');
+        const response = await fetch('mkturkfolders/parameterfiles/RiskLearningSubject_params.txt');
         const text = await response.text();
         params = JSON.parse(text);
         console.log('Parameters loaded:', params);
     } catch (error) {
         console.error('Error loading parameters:', error);
+        console.log('Make sure the file is at: mkturkfolders/parameterfiles/RiskLearningSubject_params.txt');
     }
 }
 
