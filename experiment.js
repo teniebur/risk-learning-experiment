@@ -1,3 +1,4 @@
+console.log("EXPERIMENT.JS LOADED - VERSION 3 - " + new Date());
 // ========================================
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
