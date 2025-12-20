@@ -15,7 +15,7 @@ let params = {};
 // Load your parameter file
 async function loadParameters() {
     try {
-        const response = await fetch('mkturkfolders/parameterfiles/RiskLearningSubject_params.txt');
+        const response = await fetch('parameterfiles/RiskLearningSubject_params.txt');
         const text = await response.text();
         params = JSON.parse(text);
         console.log('Parameters loaded:', params);
@@ -31,7 +31,7 @@ async function loadParameters() {
 
 class RewardFeedback {
     constructor() {
-        this.rewardSound = new Audio('au0.wav');
+        this.rewardSound = new Audio('sounds/au0.wav');
         this.rewardSound.preload = 'auto';
     }
     
@@ -207,8 +207,8 @@ async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1}`);
     
     // Get random stimuli (you'll need to implement stimulus selection)
-    const sureOption = 'mkturkfolders/imagebags/sure_options/sure_2_tokens.png';
-    const gambleOption = 'mkturkfolders/imagebags/gamble_options/gamble_1.png';
+    const sureOption = 'imagebags/sure_options/Sure2.png';
+    const gambleOption = 'imagebags/gamble_options/Gamble7v1pw10.png';
     
     // Randomize which appears first
     const showSureFirst = Math.random() > 0.5;
