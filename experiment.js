@@ -1,31 +1,39 @@
-console.log("EXPERIMENT.JS LOADED - VERSION 3 - " + new Date());
-console.log("EXPERIMENT.JS LOADED - VERSION 3 - " + new Date());
-console.log("EXPERIMENT.JS LOADED - VERSION 3 - " + new Date());
-console.log("EXPERIMENT.JS LOADED - VERSION 3 - " + new Date());
 // ========================================
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
+
+console.log("EXPERIMENT.JS LOADED - VERSION 6 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
 let totalTrials = 100;
 let experimentData = [];
 let params = {};
+let loadedImages = {};  // Store preloaded images
+let rewardSound = null; // Store loaded audio
 
 // ========================================
-// 1. LOAD PARAMETERS AND INITIALIZE
+// 1. LOAD ASSETS FROM DROPBOX
 // ========================================
 
-// Load your parameter file
-async function loadParameters() {
+async function loadAssetsFromDropbox() {
+    console.log("Loading assets from Dropbox...");
+    
     try {
-        const response = await fetch('parameterfiles/RiskLearningSubject_params.txt');
-        const text = await response.text();
-        params = JSON.parse(text);
-        console.log('Parameters loaded:', params);
+        // Load images using MKTurk's existing function
+        // Path must start with / for Dropbox
+        const sureImagePath = "/mkturkfolders/imagebags/sure_options/sure_2_tokens.png";
+        loadedImages.sure = await loadImagefromDropbox(sureImagePath);
+        console.log("Loaded sure image:", loadedImages.sure);
+        
+        // Load audio using MKTurk's existing function
+        // SOUND_FILEPREFIX is "/mkturkfolders/sounds/au"
+        // So "0" will load "/mkturkfolders/sounds/au0.wav"
+        await loadSoundfromDropbox2("0", 0);
+        console.log("Loaded reward sound");
+        
     } catch (error) {
-        console.error('Error loading parameters:', error);
-        console.log('Make sure the file is at: mkturkfolders/parameterfiles/RiskLearningSubject_params.txt');
+        console.error("Error loading assets:", error);
     }
 }
 
@@ -33,88 +41,67 @@ async function loadParameters() {
 // 2. REWARD FEEDBACK SYSTEM
 // ========================================
 
-class RewardFeedback {
-    constructor() {
-        this.rewardSound = new Audio('mkturkfolders/sounds/au0.wav');
-        this.rewardSound.preload = 'auto';
-    }
+async function playRewardFeedback(nRewards) {
+    console.log(`Playing reward sound ${nRewards} times`);
     
-    async playRewardFeedback(nRewards) {
-        console.log(`Playing reward sound ${nRewards} times`);
-        
-        for (let i = 0; i < nRewards; i++) {
-            try {
-                // Reset sound to beginning
-                this.rewardSound.currentTime = 0;
-                
-                // Play sound
-                await this.rewardSound.play();
-                
-                // Wait 200ms between sounds
-                await this.sleep(200);
-                
-            } catch (error) {
-                console.error('Error playing sound:', error);
+    for (let i = 0; i < nRewards; i++) {
+        try {
+            // Use MKTurk's sound system
+            if (sounds && sounds.buffer && sounds.buffer[0]) {
+                var source = audiocontext.createBufferSource();
+                source.buffer = sounds.buffer[0];
+                source.connect(audiocontext.destination);
+                source.start(0);
             }
+            
+            // Wait 300ms between sounds
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+        } catch (error) {
+            console.error('Error playing sound:', error);
         }
     }
+}
+
+function determineRewardCount(chosenStimulus) {
+    const sureValues = {
+        'sure_1_token.png': 1,
+        'sure_2_tokens.png': 2,
+        'sure_3_tokens.png': 3,
+        'sure_4_tokens.png': 4
+    };
     
-    determineRewardCount(chosenStimulus) {
-        // Map your sure stimuli to reward counts
-        const sureValues = {
-            'Sure1.png': 1,
-            'Sure2.png': 2,
-            'Sure3.png': 3,
-            'Sure4.png': 4,
-            'Sure5.png': 5,
-            'Sure6.png': 6,
-            'Sure7.png': 7
-        };
-        
-        return sureValues[chosenStimulus] || 0;
-    }
-    
-    // Helper function for delays
-    sleep(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
+    // Extract filename from path
+    const filename = chosenStimulus.split('/').pop();
+    return sureValues[filename] || 1;
 }
 
 // ========================================
 // 3. STIMULUS DISPLAY FUNCTIONS
 // ========================================
 
-function createStimulusElement(imagePath, position) {
-    const img = document.createElement('img');
-    img.src = imagePath;
+function showStimulus(image, position) {
+    const container = document.getElementById('experiment-container');
+    
+    // Clone the image element
+    const img = image.cloneNode();
     img.className = 'stimulus';
     img.style.position = 'absolute';
-    img.style.width = '150px';  // Adjust size as needed
+    img.style.width = '150px';
     img.style.height = '150px';
     img.style.cursor = 'pointer';
     
-    // Position based on your grid indices [3, 23]
+    // Position based on left or right
     if (position === 'left') {
         img.style.left = '25%';
-        img.style.top = '50%';
     } else if (position === 'right') {
         img.style.left = '75%';
-        img.style.top = '50%';
-    } else if (position === 'center') {
-        img.style.left = '50%';
-        img.style.top = '50%';
     }
-    
-    // Center the image on its position
+    img.style.top = '50%';
     img.style.transform = 'translate(-50%, -50%)';
     
+    container.appendChild(img);
     return img;
-}
-
-function showStimulus(imagePath, position) {
-    const stimulus = createStimulusElement(imagePath, position);
-    document.getElementById('experiment-container').appendChild(stimulus);
-    return stimulus;
 }
 
 function hideStimulus(stimulusElement) {
@@ -130,45 +117,42 @@ function clearDisplay() {
 }
 
 // ========================================
-// 4. SINGLE STIMULUS PRESENTATION 
+// 4. SINGLE STIMULUS PRESENTATION
 // ========================================
 
-async function presentSingleStimulus(stimulusPath) {
+async function presentSingleStimulus(image, imagePath) {
     return new Promise((resolve) => {
-        // Clear display
         clearDisplay();
         
         // Randomly choose left or right position
         const position = Math.random() > 0.5 ? 'left' : 'right';
         
         // Show single stimulus
-        const stimulus = showStimulus(stimulusPath, position);
+        const stimulus = showStimulus(image, position);
         
         let responseMade = false;
-        let correct = false;
         
         // Correct response: click on the stimulus
         const handleStimulusClick = (event) => {
-            event.stopPropagation(); // Prevent background click
+            event.stopPropagation();
             if (!responseMade) {
                 responseMade = true;
-                correct = true;
                 hideStimulus(stimulus);
-                resolve({ correct: true, position: position });
+                document.getElementById('experiment-container').removeEventListener('click', handleBackgroundClick);
+                resolve({ correct: true, position: position, imagePath: imagePath });
             }
         };
         
-        // Incorrect response: click anywhere else on screen
+        // Incorrect response: click anywhere else
         const handleBackgroundClick = () => {
             if (!responseMade) {
                 responseMade = true;
-                correct = false;
                 hideStimulus(stimulus);
-                resolve({ correct: false, position: position });
+                stimulus.removeEventListener('click', handleStimulusClick);
+                resolve({ correct: false, position: position, imagePath: imagePath });
             }
         };
         
-        // Add click handlers
         stimulus.addEventListener('click', handleStimulusClick);
         document.getElementById('experiment-container').addEventListener('click', handleBackgroundClick);
         
@@ -177,65 +161,46 @@ async function presentSingleStimulus(stimulusPath) {
             if (!responseMade) {
                 responseMade = true;
                 hideStimulus(stimulus);
+                stimulus.removeEventListener('click', handleStimulusClick);
                 document.getElementById('experiment-container').removeEventListener('click', handleBackgroundClick);
-                resolve({ correct: false, position: position, timeout: true });
+                resolve({ correct: false, position: position, imagePath: imagePath, timeout: true });
             }
         }, params.ChoiceTimeOut || 10000);
     });
 }
-// ========================================
-// 5. POSITION RANDOMIZATION
-// ========================================
-
-function randomizePositions() {
-    const positions = ['left', 'right'];
-    
-    // Simple shuffle
-    if (Math.random() > 0.5) {
-        positions.reverse();
-    }
-    
-    return {
-        surePosition: positions[0],
-        gamblePosition: positions[1]
-    };
-}
 
 // ========================================
-// 6. TRIAL MANAGEMENT
+// 5. TRIAL MANAGEMENT
 // ========================================
 
 async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1}`);
     
-    // Select a single stimulus (sure option for reward feedback)
-    const stimulus = 'imagebags/sure_options/sure_2_tokens.png';
+    // Use preloaded image
+    const imagePath = "/mkturkfolders/imagebags/sure_options/sure_2_tokens.png";
     
     // Present single stimulus
-    const response = await presentSingleStimulus(stimulus);
+    const response = await presentSingleStimulus(loadedImages.sure, imagePath);
     
     // Process response
     if (response.correct) {
         console.log('Correct response!');
         
-        // Play reward feedback for correct responses
-        const rewardCount = rewardSystem.determineRewardCount(stimulus);
-        if (rewardCount > 0) {
-            await rewardSystem.playRewardFeedback(rewardCount);
-        }
+        // Play reward feedback
+        const rewardCount = determineRewardCount(imagePath);
+        await playRewardFeedback(rewardCount);
     } else {
         console.log('Incorrect response or timeout');
-        // No reward feedback for incorrect responses
     }
     
     // Save trial data
     experimentData.push({
         trial: currentTrial + 1,
-        stimulus: stimulus,
+        stimulus: imagePath,
         position: response.position,
         correct: response.correct,
         timeout: response.timeout || false,
-        rewardCount: response.correct ? rewardSystem.determineRewardCount(stimulus) : 0,
+        rewardCount: response.correct ? determineRewardCount(imagePath) : 0,
         timestamp: new Date().toISOString()
     });
     
@@ -252,19 +217,16 @@ async function runTrial() {
 }
 
 // ========================================
-// 7. EXPERIMENT CONTROL
+// 6. EXPERIMENT CONTROL
 // ========================================
-
-// Initialize reward system
-const rewardSystem = new RewardFeedback();
 
 async function startExperiment() {
     console.log('Starting experiment...');
     
-    // Load parameters
-    await loadParameters();
+    // Load assets from Dropbox
+    await loadAssetsFromDropbox();
     
-    // Show instructions
+    // Hide instructions, show experiment
     document.getElementById('instructions').style.display = 'none';
     document.getElementById('experiment-container').style.display = 'block';
     
@@ -276,21 +238,16 @@ function endExperiment() {
     console.log('Experiment complete!');
     console.log('Data:', experimentData);
     
-    // Hide experiment, show completion message
     document.getElementById('experiment-container').style.display = 'none';
     document.getElementById('completion').style.display = 'block';
-    
-    // You can send data to server here
-    // sendDataToServer(experimentData);
 }
 
 // ========================================
-// 8. PAGE LOAD INITIALIZATION
+// 7. PAGE LOAD INITIALIZATION
 // ========================================
 
 window.addEventListener('load', function() {
     console.log('Page loaded, experiment ready');
-    
-    // Add start button handler
     document.getElementById('start-button').addEventListener('click', startExperiment);
+});
 });
