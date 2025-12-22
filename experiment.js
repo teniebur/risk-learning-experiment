@@ -22,7 +22,7 @@ async function loadAssetsFromDropbox() {
     try {
         // Load images using MKTurk's existing function
         // Path must start with / for Dropbox
-        const sureImagePath = "/mkturkfolders/imagebags/sure_options/sure_2_tokens.png";
+        const sureImagePath = "/mkturkfolders/imagebags/sure_options/Sure2.png";
         loadedImages.sure = await loadImagefromDropbox(sureImagePath);
         console.log("Loaded sure image:", loadedImages.sure);
         
@@ -65,10 +65,13 @@ async function playRewardFeedback(nRewards) {
 
 function determineRewardCount(chosenStimulus) {
     const sureValues = {
-        'sure_1_token.png': 1,
-        'sure_2_tokens.png': 2,
-        'sure_3_tokens.png': 3,
-        'sure_4_tokens.png': 4
+        'Sure1.png': 1,
+        'Sure2.png': 2,
+        'Sure3.png': 3,
+        'Sure4.png': 4,
+        'Sure5.png': 5,
+        'Sure6.png': 6,
+        'Sure7.png': 7
     };
     
     // Extract filename from path
@@ -177,7 +180,7 @@ async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1}`);
     
     // Use preloaded image
-    const imagePath = "/mkturkfolders/imagebags/sure_options/sure_2_tokens.png";
+    const sureImagePath = "/mkturkfolders/imagebags/sure_options/Sure2.png";
     
     // Present single stimulus
     const response = await presentSingleStimulus(loadedImages.sure, imagePath);
