@@ -2,7 +2,7 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT.JS LOADED - VERSION 10 - " + new Date());
+console.log("EXPERIMENT.JS LOADED - VERSION 9 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
@@ -92,47 +92,7 @@ async function loadAssetsFromDropbox() {
 }
 
 // ========================================
-// 2. SAVE DATA TO DROPBOX
-// ========================================
-
-async function saveDataToDropbox() {
-    try {
-        // Create filename with timestamp
-        const now = new Date();
-        const timestamp = now.toISOString().replace(/[:.]/g, '-');
-        const filename = `/mkturkfolders/datafiles/RiskLearning_${timestamp}.json`;
-        
-        // Prepare data object
-        const dataToSave = {
-            experimentInfo: {
-                startTime: experimentData[0]?.timestamp || now.toISOString(),
-                endTime: now.toISOString(),
-                totalTrials: currentTrial,
-                version: "10"
-            },
-            trials: experimentData
-        };
-        
-        // Convert to JSON string
-        const dataString = JSON.stringify(dataToSave, null, 2);
-        
-        // Upload to Dropbox
-        const response = await dbx.filesUpload({
-            path: filename,
-            contents: dataString,
-            mode: { '.tag': 'overwrite' }
-        });
-        
-        console.log("Data saved to Dropbox:", response);
-        console.log("Filename:", filename);
-        
-    } catch (error) {
-        console.error("Error saving data to Dropbox:", error);
-    }
-}
-
-// ========================================
-// 3. REWARD FEEDBACK SYSTEM
+// 2. REWARD FEEDBACK SYSTEM
 // ========================================
 
 async function playRewardFeedback(nRewards) {
@@ -171,7 +131,7 @@ function determineRewardCount(chosenStimulus) {
 }
 
 // ========================================
-// 4. STIMULUS DISPLAY FUNCTIONS
+// 3. STIMULUS DISPLAY FUNCTIONS
 // ========================================
 
 function showStimulus(image, position) {
@@ -211,7 +171,7 @@ function clearDisplay() {
 }
 
 // ========================================
-// 5. SINGLE STIMULUS PRESENTATION
+// 4. SINGLE STIMULUS PRESENTATION
 // ========================================
 
 async function presentSingleStimulus(image, imagePath) {
@@ -264,7 +224,7 @@ async function presentSingleStimulus(image, imagePath) {
 }
 
 // ========================================
-// 6. TRIAL MANAGEMENT
+// 5. TRIAL MANAGEMENT
 // ========================================
 
 async function runTrial() {
@@ -298,11 +258,6 @@ async function runTrial() {
         timestamp: new Date().toISOString()
     });
     
-    // Save data to Dropbox every 10 trials (backup)
-    if ((currentTrial + 1) % 10 === 0) {
-        await saveDataToDropbox();
-    }
-    
     // Inter-trial interval (1 second blank screen)
     await new Promise(resolve => setTimeout(resolve, 1000));
     
@@ -316,7 +271,7 @@ async function runTrial() {
 }
 
 // ========================================
-// 7. EXPERIMENT CONTROL
+// 6. EXPERIMENT CONTROL
 // ========================================
 
 async function startExperiment() {
@@ -332,29 +287,20 @@ async function startExperiment() {
     document.getElementById('instructions').style.display = 'none';
     document.getElementById('experiment-container').style.display = 'block';
     
-    // Add black background class to body
-    document.body.classList.add('experiment-running');
-    
     // Start first trial
     runTrial();
 }
 
-async function endExperiment() {
+function endExperiment() {
     console.log('Experiment complete!');
     console.log('Data:', experimentData);
-    
-    // Save final data to Dropbox
-    await saveDataToDropbox();
-    
-    // Remove black background class
-    document.body.classList.remove('experiment-running');
     
     document.getElementById('experiment-container').style.display = 'none';
     document.getElementById('completion').style.display = 'block';
 }
 
 // ========================================
-// 8. PAGE LOAD INITIALIZATION
+// 7. PAGE LOAD INITIALIZATION
 // ========================================
 
 window.addEventListener('load', function() {
