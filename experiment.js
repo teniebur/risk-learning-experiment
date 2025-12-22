@@ -304,6 +304,12 @@ async function runTrial() {
         rewardCount: response.correct ? determineRewardCount(imagePath) : 0,
         timestamp: new Date().toISOString()
     });
+
+    // THIS PART - Save data to Dropbox every 10 trials (backup)
+    if ((currentTrial + 1) % 10 === 0) {
+        console.log("Triggering backup save at trial", currentTrial + 1);
+        await saveDataToDropbox();
+    }
     
     // Inter-trial interval (1 second blank screen)
     await new Promise(resolve => setTimeout(resolve, 1000));
