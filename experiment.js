@@ -226,6 +226,9 @@ async function runTrial() {
 async function startExperiment() {
     console.log('Starting experiment...');
     
+    // Initialize audio context (requires user interaction)
+    initializeAudio();
+
     // Load assets from Dropbox
     await loadAssetsFromDropbox();
     

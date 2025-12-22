@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Learning Experiment</title>
+    
+    <!-- Add Dropbox SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/dropbox@10.34.0/dist/Dropbox-sdk.min.js"></script>
+    
     <style>
         #experiment-container {
             display: none;
@@ -78,14 +82,63 @@
         <p>Thank you for participating.</p>
     </div>
     
-    <!-- Load MKTurk framework files FIRST -->
+    <!-- Load MKTurk framework files -->
     <script src="mkturk_installsettings.js"></script>
     <script src="mkturk_globalvariables.js"></script>
     <script src="mkturk_dropbox.js"></script>
     <script src="mkturk_utils.js"></script>
     <script src="mkturk_ImageBuffer.js"></script>
     
+    <!-- Initialize Dropbox and Audio -->
+    <script>
+        // Initialize Dropbox client
+        var dbx;
+        
+        // Initialize audio context
+        var audiocontext;
+        var sounds = { buffer: [] };
+        
+        // Check for access token in URL or localStorage
+        function initializeDropbox() {
+            // Try to get token from URL (after OAuth redirect)
+            const urlParams = new URLSearchParams(window.location.hash.substring(1));
+            let accessToken = urlParams.get('access_token');
+            
+            // If not in URL, check localStorage
+            if (!accessToken) {
+                accessToken = localStorage.getItem('dropbox_access_token');
+            }
+            
+            // If we have a token, save it and initialize
+            if (accessToken) {
+                localStorage.setItem('dropbox_access_token', accessToken);
+                dbx = new Dropbox.Dropbox({ accessToken: accessToken });
+                console.log("Dropbox initialized with access token");
+                return true;
+            } else {
+                // No token - redirect to Dropbox auth
+                console.log("No access token found, redirecting to Dropbox auth...");
+                const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${DBX_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&response_type=token`;
+                window.location.href = authUrl;
+                return false;
+            }
+        }
+        
+        // Initialize audio context (needs user interaction)
+        function initializeAudio() {
+            if (!audiocontext) {
+                audiocontext = new (window.AudioContext || window.webkitAudioContext)();
+                console.log("Audio context initialized");
+            }
+        }
+        
+        // Run initialization when page loads
+        window.addEventListener('load', function() {
+            initializeDropbox();
+        });
+    </script>
+    
     <!-- Load your experiment script LAST -->
-    <script src="experiment.js?v=6"></script>
+    <script src="experiment.js?v=7"></script>
 </body>
 </html>
