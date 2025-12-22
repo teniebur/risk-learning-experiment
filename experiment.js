@@ -2,7 +2,7 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT.JS LOADED - VERSION 9 - " + new Date());
+console.log("EXPERIMENT.JS LOADED - VERSION 12 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
