@@ -92,7 +92,54 @@ async function loadAssetsFromDropbox() {
 }
 
 // ========================================
-// 2. REWARD FEEDBACK SYSTEM
+// 2. SAVE DATA TO DROPBOX
+// ========================================
+
+async function saveDataToDropbox() {
+    console.log("Attempting to save data to Dropbox...");
+    console.log("Data to save:", experimentData);
+    
+    try {
+        // Create filename with timestamp
+        const now = new Date();
+        const timestamp = now.toISOString().replace(/[:.]/g, '-');
+        const filename = `/mkturkfolders/datafiles/RiskLearning_${timestamp}.json`;
+        
+        console.log("Saving to filename:", filename);
+        
+        // Prepare data object
+        const dataToSave = {
+            experimentInfo: {
+                startTime: experimentData[0]?.timestamp || now.toISOString(),
+                endTime: now.toISOString(),
+                totalTrials: currentTrial,
+                version: "12"
+            },
+            trials: experimentData
+        };
+        
+        // Convert to JSON string
+        const dataString = JSON.stringify(dataToSave, null, 2);
+        console.log("Data string length:", dataString.length);
+        
+        // Upload to Dropbox
+        const response = await dbx.filesUpload({
+            path: filename,
+            contents: dataString,
+            mode: { '.tag': 'overwrite' }
+        });
+        
+        console.log("SUCCESS! Data saved to Dropbox:", response);
+        console.log("Filename:", filename);
+        
+    } catch (error) {
+        console.error("ERROR saving data to Dropbox:", error);
+        console.error("Error details:", error.message);
+    }
+}
+
+// ========================================
+// 3. REWARD FEEDBACK SYSTEM
 // ========================================
 
 async function playRewardFeedback(nRewards) {
@@ -131,7 +178,7 @@ function determineRewardCount(chosenStimulus) {
 }
 
 // ========================================
-// 3. STIMULUS DISPLAY FUNCTIONS
+// 4. STIMULUS DISPLAY FUNCTIONS
 // ========================================
 
 function showStimulus(image, position) {
@@ -171,7 +218,7 @@ function clearDisplay() {
 }
 
 // ========================================
-// 4. SINGLE STIMULUS PRESENTATION
+// 5. SINGLE STIMULUS PRESENTATION
 // ========================================
 
 async function presentSingleStimulus(image, imagePath) {
@@ -224,7 +271,7 @@ async function presentSingleStimulus(image, imagePath) {
 }
 
 // ========================================
-// 5. TRIAL MANAGEMENT
+// 6. TRIAL MANAGEMENT
 // ========================================
 
 async function runTrial() {
@@ -271,7 +318,7 @@ async function runTrial() {
 }
 
 // ========================================
-// 6. EXPERIMENT CONTROL
+// 7. EXPERIMENT CONTROL
 // ========================================
 
 async function startExperiment() {
