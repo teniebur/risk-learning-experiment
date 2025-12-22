@@ -1,144 +1,72 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Risk Learning Experiment</title>
+<style>
+    #experiment-container {
+        display: none;
+        height: 600px;
+        position: relative;
+        cursor: pointer;
+        background-color: black;  /* Add this line */
+    }
     
-    <!-- Add Dropbox SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/dropbox@10.34.0/dist/Dropbox-sdk.min.js"></script>
+    .stimulus {
+        transition: opacity 0.2s ease-in-out;
+        z-index: 10;
+    }
     
-    <style>
-        #experiment-container {
-            display: none;
-            height: 600px;
-            position: relative;
-            cursor: pointer;
-        }
-        
-        .stimulus {
-            transition: opacity 0.2s ease-in-out;
-            z-index: 10;
-        }
-        
-        .stimulus:hover {
-            opacity: 0.8;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-        }
-        
-        #instructions, #experiment-container, #completion {
-            max-width: 800px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        #completion {
-            display: none;
-        }
-        
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px 32px;
-            text-align: center;
-            font-size: 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        
-        button:hover {
-            background-color: #45a049;
-        }
-    </style>
-</head>
-<body>
-    <!-- Instructions Screen -->
-    <div id="instructions">
-        <h1>Risk Learning Experiment</h1>
-        <p>In this experiment, you will see different options appear on screen.</p>
-        <p>Click on the option you prefer when it appears.</p>
-        <p>You will hear reward sounds based on your choices.</p>
-        <button id="start-button">Start Experiment</button>
-    </div>
+    .stimulus:hover {
+        opacity: 0.8;
+    }
     
-    <!-- Experiment Screen -->
-    <div id="experiment-container">
-        <!-- Stimuli will appear here -->
-    </div>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f0f0f0;
+    }
     
-    <!-- Completion Screen -->
-    <div id="completion">
-        <h1>Experiment Complete!</h1>
-        <p>Thank you for participating.</p>
-    </div>
+    /* Add this for full black screen during experiment */
+    body.experiment-running {
+        background-color: black;
+        padding: 0;
+        margin: 0;
+    }
     
-    <!-- Load MKTurk framework files -->
-    <script src="mkturk_installsettings.js"></script>
-    <script src="mkturk_globalvariables.js"></script>
-    <script src="mkturk_dropbox.js"></script>
-    <script src="mkturk_utils.js"></script>
-    <script src="mkturk_ImageBuffer.js"></script>
+    #instructions, #experiment-container, #completion {
+        max-width: 800px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
     
-    <!-- Initialize Dropbox and Audio -->
-    <script>
-        // Initialize Dropbox client
-        var dbx;
-        
-        // Initialize audio context
-        var audiocontext;
-        var sounds = { buffer: [] };
-        
-        // Check for access token in URL or localStorage
-        function initializeDropbox() {
-            // Try to get token from URL (after OAuth redirect)
-            const urlParams = new URLSearchParams(window.location.hash.substring(1));
-            let accessToken = urlParams.get('access_token');
-            
-            // If not in URL, check localStorage
-            if (!accessToken) {
-                accessToken = localStorage.getItem('dropbox_access_token');
-            }
-            
-            // If we have a token, save it and initialize
-            if (accessToken) {
-                localStorage.setItem('dropbox_access_token', accessToken);
-                dbx = new Dropbox.Dropbox({ accessToken: accessToken });
-                console.log("Dropbox initialized with access token");
-                return true;
-            } else {
-                // No token - redirect to Dropbox auth
-                console.log("No access token found, redirecting to Dropbox auth...");
-                const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${DBX_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&response_type=token`;
-                window.location.href = authUrl;
-                return false;
-            }
-        }
-        
-        // Initialize audio context (needs user interaction)
-        function initializeAudio() {
-            if (!audiocontext) {
-                audiocontext = new (window.AudioContext || window.webkitAudioContext)();
-                console.log("Audio context initialized");
-            }
-        }
-        
-        // Run initialization when page loads
-        window.addEventListener('load', function() {
-            initializeDropbox();
-        });
-    </script>
+    /* Make experiment container full screen with black background */
+    body.experiment-running #experiment-container {
+        max-width: 100%;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        background-color: black;
+    }
     
-    <!-- Load your experiment script LAST -->
-    <script src="experiment.js?v=7"></script>
-</body>
-</html>
+    #completion {
+        display: none;
+    }
+    
+    button {
+        background-color: #4CAF50;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        font-size: 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    button:hover {
+        background-color: #45a049;
+    }
+</style>
