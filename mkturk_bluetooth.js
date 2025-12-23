@@ -174,7 +174,6 @@ function updateBLEStatus(message) {
 
 // Step 2: Connect server & Cache characteristics -- returns a promise
 async function connectBLEDeviceAndCacheCharacteristics(){
-    // Check if device was found
     if (!ble.device || !ble.device.gatt) {
         console.error('No BLE device found. Cannot connect.');
         throw new Error('No BLE device selected');
@@ -184,86 +183,45 @@ async function connectBLEDeviceAndCacheCharacteristics(){
     
     try {
         server = await ble.device.gatt.connect();
-        console.log("Connected to GATT server", server);
-        ble.statustext = "Connected to GATT server";
-        updateBLEStatus(ble.statustext);
+        console.log("Connected to GATT server");
         ble.server = server;
         
-        // DISCOVER ALL SERVICES (for debugging)
-        console.log("Discovering services...");
-        const services = await server.getPrimaryServices();
-        console.log("Found " + services.length + " services:");
+        // Get our service
+        console.log("Looking for service: 0x" + ble.customserviceUUID.toString(16));
+        service = await server.getPrimaryService(ble.customserviceUUID);
+        console.log("Found service!");
+        ble.service = service;
         
-        for (const service of services) {
-            console.log("Service UUID: " + service.uuid);
-            
-            // Get characteristics for each service
-            try {
-                const characteristics = await service.getCharacteristics();
-                console.log("  Characteristics for " + service.uuid + ":");
-                for (const char of characteristics) {
-                    console.log("    - " + char.uuid + " (properties: " + JSON.stringify(char.properties) + ")");
-                }
-            } catch (e) {
-                console.log("  Could not get characteristics: " + e.message);
-            }
+        // DISCOVER ALL CHARACTERISTICS
+        console.log("Discovering characteristics...");
+        const allCharacteristics = await service.getCharacteristics();
+        console.log("Found " + allCharacteristics.length + " characteristics:");
+        
+        for (const char of allCharacteristics) {
+            const props = [];
+            if (char.properties.read) props.push('read');
+            if (char.properties.write) props.push('write');
+            if (char.properties.writeWithoutResponse) props.push('writeNoResp');
+            if (char.properties.notify) props.push('notify');
+            console.log("UUID: " + char.uuid + " [" + props.join(', ') + "]");
         }
         
-        // Now try to get our specific service
-        console.log("Looking for service: " + ble.customserviceUUID);
+        console.log("---");
+        console.log("Expected UUIDs:");
+        console.log("connectionUUID: 0x" + ble.connectionUUID.toString(16));
+        console.log("pumpdurationUUID: 0x" + ble.pumpdurationUUID.toString(16));
+        console.log("pumpUUID: 0x" + ble.pumpUUID.toString(16));
+        console.log("rfidUUID: 0x" + ble.rfidUUID.toString(16));
+        console.log("---");
         
-        try {
-            service = await server.getPrimaryService(ble.customserviceUUID);
-            console.log("Found custom service", service);
-            ble.statustext = ble.statustext + "<br>Found service";
-            updateBLEStatus(ble.statustext);
-            ble.service = service;
-        } catch (e) {
-            console.error("Custom service not found: " + e.message);
-            console.log("Available services listed above - update ble.customserviceUUID to match");
-            throw e;
-        }
-        
-        // Get characteristics
-        console.log("Getting characteristics...");
-        characteristics = await Promise.all([
-            service.getCharacteristic(ble.connectionUUID),
-            service.getCharacteristic(ble.pumpdurationUUID),
-            service.getCharacteristic(ble.pumpUUID),
-            service.getCharacteristic(ble.rfidUUID)
-        ]);
-        console.log("Found characteristics", characteristics);
-        ble.statustext = ble.statustext + "<br>Found characteristics";
-        updateBLEStatus(ble.statustext);
-        
-        ble.writeconnectioncharacteristic = characteristics[0];
-        ble.writepumpdurationcharacteristic = characteristics[1];
-        ble.pumpcharacteristic = characteristics[2];
-        ble.rfidcharacteristic = characteristics[3];
-        
-        await ble.pumpcharacteristic.startNotifications();
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        await ble.rfidcharacteristic.startNotifications();
-        
-        console.log("Notifications started - Bluetooth ready!");
-        ble.statustext = ble.statustext + "<br>Bluetooth ready!";
-        updateBLEStatus(ble.statustext);
-        
-        ble.pumpcharacteristic.addEventListener('characteristicvaluechanged', onPumpNotificationFromBLE);
-        ble.rfidcharacteristic.addEventListener('characteristicvaluechanged', onRFIDNotificationFromBLE);
-        
+        // For now, just mark as connected so we can see the UUIDs
         ble.connected = true;
-        updateBLEStatus('Connected!');
-        
-        if (typeof pingBLE === 'function') {
-            pingBLE();
-        }
+        updateBLEStatus('Service found - check UUIDs above');
         
     } catch (error) {
-        console.error('Error connecting to BLE:', error);
-        console.error('Error message:', error.message);
+        console.error('Error: ' + error.message);
         ble.connected = false;
-        updateBLEStatus('Connection failed: ' + error.message);
+        updateBLEStatus('Failed: ' + error.message);
         throw error;
     }
 }
