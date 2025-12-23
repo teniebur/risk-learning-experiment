@@ -2,14 +2,15 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT.JS LOADED - VERSION 14 - " + new Date());
+console.log("EXPERIMENT.JS LOADED - VERSION 15 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
-let totalTrials = 100;
+let totalTrials = 0;  // Will be set after loading images
 let experimentData = [];
 let params = {};
-let loadedImages = {};
+let loadedImages = [];  // Array of {image: Image, path: string, type: 'sure'|'gamble'}
+let trialOrder = [];    // Randomized order of stimulus indices
 
 // ========================================
 // 1. LOAD ASSETS FROM DROPBOX
@@ -21,7 +22,6 @@ async function loadImageFromDropboxCustom(imagePath) {
         console.log("Loading image from:", imagePath);
         
         const response = await dbx.filesDownload({ path: imagePath });
-        console.log("Dropbox image response:", response);
         
         // Get the blob from the response
         const blob = response.result.fileBlob;
@@ -46,6 +46,25 @@ async function loadImageFromDropboxCustom(imagePath) {
     } catch (error) {
         console.error("Error loading image:", error);
         throw error;
+    }
+}
+
+// Get list of files in a Dropbox folder
+async function getDropboxFolderContents(folderPath) {
+    try {
+        console.log("Getting folder contents:", folderPath);
+        const response = await dbx.filesListFolder({ path: folderPath });
+        
+        // Filter for image files only
+        const imageFiles = response.result.entries
+            .filter(entry => entry['.tag'] === 'file' && entry.name.endsWith('.png'))
+            .map(entry => entry.path_lower);
+        
+        console.log("Found images:", imageFiles);
+        return imageFiles;
+    } catch (error) {
+        console.error("Error getting folder contents:", error);
+        return [];
     }
 }
 
@@ -77,10 +96,43 @@ async function loadAssetsFromDropbox() {
     console.log("Loading assets from Dropbox...");
     
     try {
-        // Load image using custom function
-        const sureImagePath = "/mkturkfolders/imagebags/sure_options/Sure2.png";
-        loadedImages.sure = await loadImageFromDropboxCustom(sureImagePath);
-        console.log("Loaded sure image:", loadedImages.sure);
+        // Get list of all sure option images
+        const sureImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/sure_options");
+        
+        // Get list of all gamble option images
+        const gambleImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/gamble_options");
+        
+        console.log("Sure options found:", sureImagePaths.length);
+        console.log("Gamble options found:", gambleImagePaths.length);
+        
+        // Load all sure option images
+        for (const path of sureImagePaths) {
+            const image = await loadImageFromDropboxCustom(path);
+            loadedImages.push({
+                image: image,
+                path: path,
+                type: 'sure'
+            });
+        }
+        
+        // Load all gamble option images
+        for (const path of gambleImagePaths) {
+            const image = await loadImageFromDropboxCustom(path);
+            loadedImages.push({
+                image: image,
+                path: path,
+                type: 'gamble'
+            });
+        }
+        
+        console.log("Total images loaded:", loadedImages.length);
+        
+        // Set total trials to number of images
+        totalTrials = loadedImages.length;
+        
+        // Create randomized trial order (without replacement)
+        trialOrder = shuffleArray([...Array(loadedImages.length).keys()]);
+        console.log("Trial order:", trialOrder);
         
         // Load audio
         await loadRewardSound();
@@ -89,6 +141,15 @@ async function loadAssetsFromDropbox() {
     } catch (error) {
         console.error("Error loading assets:", error);
     }
+}
+
+// Shuffle array (Fisher-Yates algorithm)
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
 }
 
 // ========================================
@@ -100,7 +161,7 @@ async function saveDataToDropbox() {
     console.log("Data to save:", experimentData);
     
     try {
-        // Subject name (hardcoded for now)
+        // Subject name
         const subjectName = "RiskLearningSubject";
         
         // Create filename with timestamp
@@ -117,7 +178,7 @@ async function saveDataToDropbox() {
                 startTime: experimentData[0]?.timestamp || now.toISOString(),
                 endTime: now.toISOString(),
                 totalTrials: currentTrial,
-                version: "14"
+                version: "15"
             },
             trials: experimentData
         };
@@ -166,18 +227,19 @@ async function playRewardFeedback(nRewards) {
     }
 }
 
-function determineRewardCount(chosenStimulus) {
+function determineRewardCount(imagePath) {
     const sureValues = {
-        'Sure1.png': 1,
-        'Sure2.png': 2,
-        'Sure3.png': 3,
-        'Sure4.png': 4,
-        'Sure5.png': 5,
-        'Sure6.png': 6,
-        'Sure7.png': 7
+        'sure1.png': 1,
+        'sure2.png': 2,
+        'sure3.png': 3,
+        'sure4.png': 4,
+        'sure5.png': 5,
+        'sure6.png': 6,
+        'sure7.png': 7
     };
     
-    const filename = chosenStimulus.split('/').pop();
+    // Extract filename from path (lowercase for matching)
+    const filename = imagePath.split('/').pop().toLowerCase();
     return sureValues[filename] || 1;
 }
 
@@ -196,11 +258,13 @@ function showStimulus(image, position) {
     img.style.height = '150px';
     img.style.cursor = 'pointer';
     
-    // Position based on left or right
+    // Position based on left, right, or center
     if (position === 'left') {
         img.style.left = '25%';
     } else if (position === 'right') {
         img.style.left = '75%';
+    } else if (position === 'center') {
+        img.style.left = '50%';
     }
     img.style.top = '50%';
     img.style.transform = 'translate(-50%, -50%)';
@@ -225,12 +289,13 @@ function clearDisplay() {
 // 5. SINGLE STIMULUS PRESENTATION
 // ========================================
 
-async function presentSingleStimulus(image, imagePath) {
+async function presentSingleStimulus(image, imagePath, stimulusType) {
     return new Promise((resolve) => {
         clearDisplay();
         
-        // Randomly choose left or right position
-        const position = Math.random() > 0.5 ? 'left' : 'right';
+        // Randomly choose left, right, or center position
+        const positions = ['left', 'right', 'center'];
+        const position = positions[Math.floor(Math.random() * positions.length)];
         
         // Show single stimulus
         const stimulus = showStimulus(image, position);
@@ -244,7 +309,7 @@ async function presentSingleStimulus(image, imagePath) {
                 responseMade = true;
                 hideStimulus(stimulus);
                 document.getElementById('experiment-container').removeEventListener('click', handleBackgroundClick);
-                resolve({ correct: true, position: position, imagePath: imagePath });
+                resolve({ correct: true, position: position, imagePath: imagePath, stimulusType: stimulusType });
             }
         };
         
@@ -254,7 +319,7 @@ async function presentSingleStimulus(image, imagePath) {
                 responseMade = true;
                 hideStimulus(stimulus);
                 stimulus.removeEventListener('click', handleStimulusClick);
-                resolve({ correct: false, position: position, imagePath: imagePath });
+                resolve({ correct: false, position: position, imagePath: imagePath, stimulusType: stimulusType });
             }
         };
         
@@ -268,7 +333,7 @@ async function presentSingleStimulus(image, imagePath) {
                 hideStimulus(stimulus);
                 stimulus.removeEventListener('click', handleStimulusClick);
                 document.getElementById('experiment-container').removeEventListener('click', handleBackgroundClick);
-                resolve({ correct: false, position: position, imagePath: imagePath, timeout: true });
+                resolve({ correct: false, position: position, imagePath: imagePath, stimulusType: stimulusType, timeout: true });
             }
         }, params.ChoiceTimeOut || 10000);
     });
@@ -279,20 +344,27 @@ async function presentSingleStimulus(image, imagePath) {
 // ========================================
 
 async function runTrial() {
-    console.log(`Starting trial ${currentTrial + 1}`);
+    console.log(`Starting trial ${currentTrial + 1} of ${totalTrials}`);
     
-    // Use preloaded image
-    const imagePath = "/mkturkfolders/imagebags/sure_options/Sure2.png";
+    // Get the stimulus for this trial (randomized order)
+    const stimulusIndex = trialOrder[currentTrial];
+    const stimulusData = loadedImages[stimulusIndex];
+    
+    console.log(`Presenting: ${stimulusData.path} (${stimulusData.type})`);
     
     // Present single stimulus
-    const response = await presentSingleStimulus(loadedImages.sure, imagePath);
+    const response = await presentSingleStimulus(
+        stimulusData.image, 
+        stimulusData.path, 
+        stimulusData.type
+    );
     
     // Process response
     if (response.correct) {
         console.log('Correct response!');
         
         // Play reward feedback
-        const rewardCount = determineRewardCount(imagePath);
+        const rewardCount = determineRewardCount(stimulusData.path);
         await playRewardFeedback(rewardCount);
     } else {
         console.log('Incorrect response or timeout');
@@ -301,15 +373,16 @@ async function runTrial() {
     // Save trial data
     experimentData.push({
         trial: currentTrial + 1,
-        stimulus: imagePath,
+        stimulus: stimulusData.path,
+        stimulusType: stimulusData.type,
         position: response.position,
         correct: response.correct,
         timeout: response.timeout || false,
-        rewardCount: response.correct ? determineRewardCount(imagePath) : 0,
+        rewardCount: response.correct ? determineRewardCount(stimulusData.path) : 0,
         timestamp: new Date().toISOString()
     });
-
-    // THIS PART - Save data to Dropbox every 10 trials (backup)
+    
+    // Save data to Dropbox every 10 trials (backup)
     if ((currentTrial + 1) % 10 === 0) {
         console.log("Triggering backup save at trial", currentTrial + 1);
         await saveDataToDropbox();
@@ -340,12 +413,15 @@ async function startExperiment() {
     // Load assets from Dropbox
     await loadAssetsFromDropbox();
     
+    console.log(`Experiment will have ${totalTrials} trials`);
+    
     // Hide instructions, show experiment
     document.getElementById('instructions').style.display = 'none';
     document.getElementById('experiment-container').style.display = 'block';
-
-    // Add black background class to body  <-- THIS LINE
+    
+    // Add black background class to body
     document.body.classList.add('experiment-running');
+    console.log('Added experiment-running class to body');
     
     // Start first trial
     runTrial();
@@ -367,7 +443,7 @@ async function endExperiment() {
 }
 
 // ========================================
-// 7. PAGE LOAD INITIALIZATION
+// 8. PAGE LOAD INITIALIZATION
 // ========================================
 
 window.addEventListener('load', function() {
