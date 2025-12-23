@@ -397,8 +397,40 @@ async function presentSingleStimulus(image, imagePath, stimulusType) {
 }
 
 // ========================================
-// 6. TRIAL MANAGEMENT
+// 6. OUTCOME REVEAL
 // ========================================
+
+async function showOutcome(rewardCount, position) {
+    // Clear display for 100ms
+    clearDisplay();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Find the corresponding sure stimulus image
+    const sureFilename = `sure${rewardCount}.png`;
+    const sureStimulus = loadedImages.find(img => 
+        img.path.toLowerCase().endsWith(sureFilename)
+    );
+    
+    if (sureStimulus) {
+        // Show the sure stimulus at the same position
+        const outcomeStimulus = showStimulus(sureStimulus.image, position);
+        
+        // Display outcome for 500ms (adjust as needed)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Hide outcome stimulus
+        hideStimulus(outcomeStimulus);
+    } else {
+        console.warn(`Could not find sure stimulus for reward count: ${rewardCount}`);
+    }
+}
+
+// ========================================
+// 7. TRIAL MANAGEMENT
+// ========================================
+
+let currentBlock = 1;
+let trialWithinBlock = 0;
 
 async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1} (Block ${currentBlock}, Trial ${trialWithinBlock + 1} of ${totalTrials})`);
@@ -425,6 +457,9 @@ async function runTrial() {
         
         // Determine reward based on stimulus type
         rewardResult = determineRewardCount(stimulusData.path, stimulusData.type);
+        
+        // Show outcome (clear 100ms, then show corresponding sure stimulus)
+        await showOutcome(rewardResult.rewardCount, response.position);
         
         // Play reward feedback
         await playRewardFeedback(rewardResult.rewardCount);
@@ -476,7 +511,7 @@ async function runTrial() {
 }
 
 // ========================================
-// 7. EXPERIMENT CONTROL
+// 8. EXPERIMENT CONTROL
 // ========================================
 
 async function startExperiment() {
@@ -518,7 +553,7 @@ async function endExperiment() {
 }
 
 // ========================================
-// 8. PAGE LOAD INITIALIZATION
+// 9. PAGE LOAD INITIALIZATION
 // ========================================
 
 window.addEventListener('load', function() {
