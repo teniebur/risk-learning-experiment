@@ -184,29 +184,57 @@ async function connectBLEDeviceAndCacheCharacteristics(){
     
     try {
         server = await ble.device.gatt.connect();
-        var textstr = "Connected to GATT server";
-        console.log(textstr, server);
-        ble.statustext = ble.statustext + "<br>" + textstr;
-        updateBLEStatus(textstr);
+        console.log("Connected to GATT server", server);
+        ble.statustext = "Connected to GATT server";
+        updateBLEStatus(ble.statustext);
         ble.server = server;
         
-        service = await server.getPrimaryService(ble.customserviceUUID);
-        var textstr = "Found service";
-        console.log(textstr, service);
-        ble.statustext = ble.statustext + "<br>" + textstr;
-        updateBLEStatus(textstr);
-        ble.service = service;
+        // DISCOVER ALL SERVICES (for debugging)
+        console.log("Discovering services...");
+        const services = await server.getPrimaryServices();
+        console.log("Found " + services.length + " services:");
         
+        for (const service of services) {
+            console.log("Service UUID: " + service.uuid);
+            
+            // Get characteristics for each service
+            try {
+                const characteristics = await service.getCharacteristics();
+                console.log("  Characteristics for " + service.uuid + ":");
+                for (const char of characteristics) {
+                    console.log("    - " + char.uuid + " (properties: " + JSON.stringify(char.properties) + ")");
+                }
+            } catch (e) {
+                console.log("  Could not get characteristics: " + e.message);
+            }
+        }
+        
+        // Now try to get our specific service
+        console.log("Looking for service: " + ble.customserviceUUID);
+        
+        try {
+            service = await server.getPrimaryService(ble.customserviceUUID);
+            console.log("Found custom service", service);
+            ble.statustext = ble.statustext + "<br>Found service";
+            updateBLEStatus(ble.statustext);
+            ble.service = service;
+        } catch (e) {
+            console.error("Custom service not found: " + e.message);
+            console.log("Available services listed above - update ble.customserviceUUID to match");
+            throw e;
+        }
+        
+        // Get characteristics
+        console.log("Getting characteristics...");
         characteristics = await Promise.all([
             service.getCharacteristic(ble.connectionUUID),
             service.getCharacteristic(ble.pumpdurationUUID),
             service.getCharacteristic(ble.pumpUUID),
             service.getCharacteristic(ble.rfidUUID)
         ]);
-        var textstr = "Found characteristics";
-        console.log(textstr, characteristics);
-        ble.statustext = ble.statustext + "<br>" + textstr;
-        updateBLEStatus(textstr);
+        console.log("Found characteristics", characteristics);
+        ble.statustext = ble.statustext + "<br>Found characteristics";
+        updateBLEStatus(ble.statustext);
         
         ble.writeconnectioncharacteristic = characteristics[0];
         ble.writepumpdurationcharacteristic = characteristics[1];
@@ -214,16 +242,12 @@ async function connectBLEDeviceAndCacheCharacteristics(){
         ble.rfidcharacteristic = characteristics[3];
         
         await ble.pumpcharacteristic.startNotifications();
-        
-        // Small delay
         await new Promise(resolve => setTimeout(resolve, 1000));
-        
         await ble.rfidcharacteristic.startNotifications();
         
-        var textstr = "Notifications started - Bluetooth ready!";
-        console.log(textstr);
-        ble.statustext = ble.statustext + "<br>" + textstr;
-        updateBLEStatus(textstr);
+        console.log("Notifications started - Bluetooth ready!");
+        ble.statustext = ble.statustext + "<br>Bluetooth ready!";
+        updateBLEStatus(ble.statustext);
         
         ble.pumpcharacteristic.addEventListener('characteristicvaluechanged', onPumpNotificationFromBLE);
         ble.rfidcharacteristic.addEventListener('characteristicvaluechanged', onRFIDNotificationFromBLE);
@@ -231,14 +255,12 @@ async function connectBLEDeviceAndCacheCharacteristics(){
         ble.connected = true;
         updateBLEStatus('Connected!');
         
-        // Start ping to keep connection alive
         if (typeof pingBLE === 'function') {
             pingBLE();
         }
         
     } catch (error) {
         console.error('Error connecting to BLE:', error);
-        console.error('Error name:', error.name);
         console.error('Error message:', error.message);
         ble.connected = false;
         updateBLEStatus('Connection failed: ' + error.message);
