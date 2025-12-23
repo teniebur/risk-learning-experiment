@@ -103,7 +103,7 @@
 <body>
     <!-- Instructions Screen -->
     <div id="instructions">
-        <h1>Risk Learning Experiment v28</h1>
+        <h1>Risk Learning Experiment v30</h1>
         <p>In this experiment, you will see different options appear on screen.</p>
         <p>Click on the option you prefer when it appears.</p>
         <p>You will hear reward sounds based on your choices.</p>
@@ -189,7 +189,7 @@
     </script>
     
     <!-- Load experiment script -->
-    <script src="experiment.js?v=28"></script>
+    <script src="experiment.js?v=30"></script>
     
     <!-- Debug Logger (MUST BE LAST) -->
     <script>
@@ -240,40 +240,7 @@
     <script>
         document.getElementById('test-pump-button').addEventListener('click', async function() {
             console.log("Test pump button clicked");
-            
-            if (!ble.connected || !ble.pumpWriteCharacteristic) {
-                console.error("BLE not connected!");
-                return;
-            }
-            
-            // Try different byte patterns
-            const testPatterns = [
-                [0x01],                 // Single byte: 1
-                [0x64],                 // Single byte: 100
-                [0xFF],                 // Single byte: 255
-                [0x64, 0x00],           // Two bytes little-endian: 100
-                [0x00, 0x64],           // Two bytes big-endian: 100
-                [0xE8, 0x03],           // Two bytes little-endian: 1000
-                [0x03, 0xE8],           // Two bytes big-endian: 1000
-                [0x01, 0x00, 0x00, 0x00], // Four bytes: 1
-            ];
-            
-            for (let i = 0; i < testPatterns.length; i++) {
-                const data = new Uint8Array(testPatterns[i]);
-                console.log("Test " + (i+1) + ": Sending bytes [" + testPatterns[i].join(', ') + "]");
-                
-                try {
-                    await ble.pumpWriteCharacteristic.writeValueWithoutResponse(data);
-                    console.log("Sent successfully!");
-                } catch (e) {
-                    console.error("Error: " + e.message);
-                }
-                
-                // Wait 1 second between tests
-                await new Promise(r => setTimeout(r, 1000));
-            }
-            
-            console.log("All tests complete!");
+            await writepumpdurationtoBLE(100);
         });
     </script>
     
