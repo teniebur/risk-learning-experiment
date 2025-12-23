@@ -328,16 +328,25 @@ async function writepumpdurationtoBLE(num) {
         return false;
     }
     
+    // Use toBytesInt16 like original MKTurk
     var arrInt8 = toBytesInt16(num);
-    console.log("Sending bytes: " + arrInt8[0] + ", " + arrInt8[1]);
+    console.log("Sending bytes: [" + arrInt8[0] + ", " + arrInt8[1] + "] to characteristic 0xA001");
     
     try {
+        // Try writeValue first (with response)
         await ble.pumpWriteCharacteristic.writeValue(arrInt8);
         console.log('Wrote pump value: ' + num);
         return true;
     } catch(error) {
-        console.error('Could not write pump duration: ' + error.message);
-        return false;
+        console.log('writeValue failed, trying writeValueWithoutResponse...');
+        try {
+            await ble.pumpWriteCharacteristic.writeValueWithoutResponse(arrInt8);
+            console.log('Wrote pump value (no response): ' + num);
+            return true;
+        } catch(error2) {
+            console.error('Both write methods failed: ' + error2.message);
+            return false;
+        }
     }
 }
 
