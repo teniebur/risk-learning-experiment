@@ -2,7 +2,7 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT.JS LOADED - VERSION 12 - " + new Date());
+console.log("EXPERIMENT.JS LOADED - VERSION 13 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
@@ -100,20 +100,24 @@ async function saveDataToDropbox() {
     console.log("Data to save:", experimentData);
     
     try {
+        // Subject name (hardcoded for now)
+        const subjectName = "RiskLearningSubject";
+        
         // Create filename with timestamp
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-');
-        const filename = `/mkturkfolders/datafiles/RiskLearning_${timestamp}.json`;
+        const filename = `/mkturkfolders/datafiles/${subjectName}/${subjectName}_${timestamp}.json`;
         
         console.log("Saving to filename:", filename);
         
         // Prepare data object
         const dataToSave = {
             experimentInfo: {
+                subject: subjectName,
                 startTime: experimentData[0]?.timestamp || now.toISOString(),
                 endTime: now.toISOString(),
                 totalTrials: currentTrial,
-                version: "12"
+                version: "13"
             },
             trials: experimentData
         };
