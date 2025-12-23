@@ -17,20 +17,31 @@
 
 //================ INITIALIZE BLE VARIABLE ================//
 var ble = {
-  name: "BLENano_Bo",
-  namePrefix: "BLENano_",
-  serviceUUID: 0xFFFF,
-  customserviceUUID: 0xA000,
-  pumpWriteUUID: 0xA001,  // This is the only characteristic on your device
+    name: "BLENano_Bo",
+    namePrefix: "BLENano_",
+    serviceUUID: 0xFFFF,
+    customserviceUUID: 0xA000,
+    connectionUUID: 0xA001,
+    pumpdurationUUID: 0xA002,
+    pumpUUID: 0xA003,
+    rfidUUID: 0xA004,
 
-  device: [],
-  server: [],
-  service: [],
-  pumpWriteCharacteristic: [],  // For writing pump commands
-  connected: false,
-  ping_duration: 200,
-  ping_interval: 5000,
-  statustext: "",
+    device: [],
+    server: [],
+    service: [],
+    writeconnectioncharacteristic: [],
+    writepumpdurationcharacteristic: [],
+    pumpcharacteristic: [],
+    rfidcharacteristic: [],
+    connected: false,
+
+    ping_duration: 200,
+    ping_interval: 5000,
+    twrite_connection: 0,
+    twrite_pumpduration: 0,
+    tnotify_pump: 0,
+    tnotify_rfid: 0,
+    statustext: "",
 }
 //================ INITIALIZE BLE VARIABLE (end) ================//
 
@@ -170,7 +181,7 @@ function updateBLEStatus(message) {
 // Step 2: Connect server & Cache characteristics -- returns a promise
 async function connectBLEDeviceAndCacheCharacteristics(){
     if (!ble.device || !ble.device.gatt) {
-        console.error('No BLE device found. Cannot connect.');
+        console.error('No BLE device found.');
         throw new Error('No BLE device selected');
     }
     
@@ -181,22 +192,55 @@ async function connectBLEDeviceAndCacheCharacteristics(){
         console.log("Connected to GATT server");
         ble.server = server;
         
-        // Get our service
-        console.log("Getting service...");
+        console.log("Getting service 0xA000...");
         service = await server.getPrimaryService(ble.customserviceUUID);
         console.log("Found service!");
         ble.service = service;
         
-        // Get the pump write characteristic
-        console.log("Getting pump characteristic...");
-        ble.pumpWriteCharacteristic = await service.getCharacteristic(ble.pumpWriteUUID);
-        console.log("Found pump characteristic!");
+        // Discover all characteristics first
+        console.log("Discovering all characteristics...");
+        const allChars = await service.getCharacteristics();
+        console.log("Found " + allChars.length + " characteristics:");
+        for (const char of allChars) {
+            console.log("  - " + char.uuid);
+        }
+        
+        // Get specific characteristics
+        console.log("Getting specific characteristics...");
+        
+        characteristics = await Promise.all([
+            service.getCharacteristic(ble.connectionUUID),
+            service.getCharacteristic(ble.pumpdurationUUID),
+            service.getCharacteristic(ble.pumpUUID),
+            service.getCharacteristic(ble.rfidUUID)
+        ]);
+        
+        console.log("Found all 4 characteristics!");
+        ble.writeconnectioncharacteristic = characteristics[0];
+        ble.writepumpdurationcharacteristic = characteristics[1];
+        ble.pumpcharacteristic = characteristics[2];
+        ble.rfidcharacteristic = characteristics[3];
+        
+        // Start notifications
+        await ble.pumpcharacteristic.startNotifications();
+        console.log("Pump notifications started");
+        
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        await ble.rfidcharacteristic.startNotifications();
+        console.log("RFID notifications started");
+        
+        ble.pumpcharacteristic.addEventListener('characteristicvaluechanged', onPumpNotificationFromBLE);
+        ble.rfidcharacteristic.addEventListener('characteristicvaluechanged', onRFIDNotificationFromBLE);
         
         ble.connected = true;
-        ble.device.addEventListener('gattserverdisconnected', onDisconnectedBLE);
+        updateBLEStatus('Connected - All characteristics found!');
+        console.log("BLE fully connected!");
         
-        updateBLEStatus('Connected!');
-        console.log("BLE fully connected and ready!");
+        // Start ping
+        if (typeof pingBLE === 'function') {
+            pingBLE();
+        }
         
     } catch (error) {
         console.error('Error: ' + error.message);
@@ -323,30 +367,21 @@ async function writepumpdurationtoBLE(num) {
         return false;
     }
     
-    if (!ble.pumpWriteCharacteristic) {
-        console.error('Pump characteristic not found');
+    if (!ble.writepumpdurationcharacteristic) {
+        console.error('Pump duration characteristic (0xA002) not found');
         return false;
     }
     
-    // Use toBytesInt16 like original MKTurk
     var arrInt8 = toBytesInt16(num);
-    console.log("Sending bytes: [" + arrInt8[0] + ", " + arrInt8[1] + "] to characteristic 0xA001");
+    console.log("Sending to 0xA002: [" + arrInt8[0] + ", " + arrInt8[1] + "]");
     
     try {
-        // Try writeValue first (with response)
-        await ble.pumpWriteCharacteristic.writeValue(arrInt8);
-        console.log('Wrote pump value: ' + num);
+        await ble.writepumpdurationcharacteristic.writeValue(arrInt8);
+        console.log('Pump triggered with duration: ' + num);
         return true;
     } catch(error) {
-        console.log('writeValue failed, trying writeValueWithoutResponse...');
-        try {
-            await ble.pumpWriteCharacteristic.writeValueWithoutResponse(arrInt8);
-            console.log('Wrote pump value (no response): ' + num);
-            return true;
-        } catch(error2) {
-            console.error('Both write methods failed: ' + error2.message);
-            return false;
-        }
+        console.error('Error: ' + error.message);
+        return false;
     }
 }
 
