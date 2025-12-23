@@ -238,30 +238,28 @@
     </script>
 
     <script>
-        document.getElementById('test-pump-button').addEventListener('click', async function() {
-            console.log("Test pump button clicked");
-            // Try different values
-            console.log("Trying value 1...");
-            await writepumpdurationtoBLE(1);
-            await new Promise(r => setTimeout(r, 500));
-            
-            console.log("Trying value 100...");
-            await writepumpdurationtoBLE(100);
-            await new Promise(r => setTimeout(r, 500));
-            
-            console.log("Trying value 255...");
-            await writepumpdurationtoBLE(255);
-            await new Promise(r => setTimeout(r, 500));
-            
-            console.log("Trying value 1000...");
-            await writepumpdurationtoBLE(1000);
-            if (typeof triggerPump === 'function') {
-                await triggerPump(100);
-            } else {
-                console.error("triggerPump function not found");
-            }
-        });
-    </script>
+    document.getElementById('test-pump-button').addEventListener('click', async function() {
+        console.log("Test pump button clicked");
+        
+        // Try different values
+        console.log("Trying value 1...");
+        await writepumpdurationtoBLE(1);
+        await new Promise(r => setTimeout(r, 500));
+        
+        console.log("Trying value 100...");
+        await writepumpdurationtoBLE(100);
+        await new Promise(r => setTimeout(r, 500));
+        
+        console.log("Trying value 255...");
+        await writepumpdurationtoBLE(255);
+        await new Promise(r => setTimeout(r, 500));
+        
+        console.log("Trying value 1000...");
+        await writepumpdurationtoBLE(1000);
+        
+        console.log("Test complete!");
+    });
+</script>
     
 </body>
 </html>
