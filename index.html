@@ -123,6 +123,8 @@
         </div>
         
         <button id="start-button">Start Experiment</button>
+        
+        <button id="test-pump-button" style="background-color: #0066ff;">Test Pump</button>
     </div>
     
     <!-- Experiment Screen -->
@@ -234,5 +236,17 @@
         
         console.log('Debug logger initialized!');
     </script>
+
+    <script>
+        document.getElementById('test-pump-button').addEventListener('click', async function() {
+            console.log("Test pump button clicked");
+            if (typeof triggerPump === 'function') {
+                await triggerPump(100);
+            } else {
+                console.error("triggerPump function not found");
+            }
+        });
+    </script>
+    
 </body>
 </html>
