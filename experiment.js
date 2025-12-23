@@ -2,7 +2,7 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT.JS LOADED - VERSION 13 - " + new Date());
+console.log("EXPERIMENT.JS LOADED - VERSION 14 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
@@ -117,7 +117,7 @@ async function saveDataToDropbox() {
                 startTime: experimentData[0]?.timestamp || now.toISOString(),
                 endTime: now.toISOString(),
                 totalTrials: currentTrial,
-                version: "13"
+                version: "14"
             },
             trials: experimentData
         };
