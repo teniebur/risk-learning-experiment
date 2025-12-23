@@ -17,31 +17,19 @@
 
 //================ INITIALIZE BLE VARIABLE ================//
 var ble = {
-  // name: "redbearlabsnano",
-  name: "BLENano_PumpRFID_Setta",
+  name: "BLENano_Bo",
   namePrefix: "BLENano_",
-  serviceUUID: 0xFFFF, // Service UUID
+  serviceUUID: 0xFFFF,
   customserviceUUID: 0xA000,
-  connectionUUID: 0xA001, // Connection status
-  pumpdurationUUID: 0xA002, //pump duration, 2 bytes (write, write w/o response)
-  pumpUUID: 0xA003, //notify pump opened by ble, 4 bytes (read,notify)
-  rfidUUID: 0xA004, //tag unique RFID, 13 bytes (read,notify)
+  pumpWriteUUID: 0xA001,  // This is the only characteristic on your device
 
   device: [],
   server: [],
   service: [],
-  writeconnectioncharacteristic: [],
-  writepumpdurationcharacteristic: [],
-  pumpcharacteristic: [],
-  rfidcharacteristic: [],
+  pumpWriteCharacteristic: [],  // For writing pump commands
   connected: false,
-
   ping_duration: 200,
   ping_interval: 5000,
-  twrite_connection: 0,
-  twrite_pumpduration: 0,
-  tnotify_pump: 0,
-  tnotify_rfid: 0,
   statustext: "",
 }
 //================ INITIALIZE BLE VARIABLE (end) ================//
@@ -187,36 +175,21 @@ async function connectBLEDeviceAndCacheCharacteristics(){
         ble.server = server;
         
         // Get our service
-        console.log("Looking for service: 0x" + ble.customserviceUUID.toString(16));
+        console.log("Getting service...");
         service = await server.getPrimaryService(ble.customserviceUUID);
         console.log("Found service!");
         ble.service = service;
         
-        // DISCOVER ALL CHARACTERISTICS
-        console.log("Discovering characteristics...");
-        const allCharacteristics = await service.getCharacteristics();
-        console.log("Found " + allCharacteristics.length + " characteristics:");
+        // Get the pump write characteristic
+        console.log("Getting pump characteristic...");
+        ble.pumpWriteCharacteristic = await service.getCharacteristic(ble.pumpWriteUUID);
+        console.log("Found pump characteristic!");
         
-        for (const char of allCharacteristics) {
-            const props = [];
-            if (char.properties.read) props.push('read');
-            if (char.properties.write) props.push('write');
-            if (char.properties.writeWithoutResponse) props.push('writeNoResp');
-            if (char.properties.notify) props.push('notify');
-            console.log("UUID: " + char.uuid + " [" + props.join(', ') + "]");
-        }
-        
-        console.log("---");
-        console.log("Expected UUIDs:");
-        console.log("connectionUUID: 0x" + ble.connectionUUID.toString(16));
-        console.log("pumpdurationUUID: 0x" + ble.pumpdurationUUID.toString(16));
-        console.log("pumpUUID: 0x" + ble.pumpUUID.toString(16));
-        console.log("rfidUUID: 0x" + ble.rfidUUID.toString(16));
-        console.log("---");
-        
-        // For now, just mark as connected so we can see the UUIDs
         ble.connected = true;
-        updateBLEStatus('Service found - check UUIDs above');
+        ble.device.addEventListener('gattserverdisconnected', onDisconnectedBLE);
+        
+        updateBLEStatus('Connected!');
+        console.log("BLE fully connected and ready!");
         
     } catch (error) {
         console.error('Error: ' + error.message);
@@ -227,6 +200,43 @@ async function connectBLEDeviceAndCacheCharacteristics(){
 }
 //==================== CONNECT BLE (end) ====================//
 
+// Trigger pump for reward delivery
+async function triggerPump(duration) {
+    if (!ble.connected || !ble.pumpWriteCharacteristic) {
+        console.error('BLE not connected');
+        return false;
+    }
+    
+    try {
+        // Convert duration to bytes (adjust based on your device protocol)
+        // Common formats: single byte, or 2-byte little-endian
+        const data = new Uint8Array([duration & 0xFF]);
+        
+        console.log("Triggering pump with duration: " + duration);
+        await ble.pumpWriteCharacteristic.writeValueWithoutResponse(data);
+        console.log("Pump triggered!");
+        return true;
+        
+    } catch (error) {
+        console.error('Error triggering pump: ' + error.message);
+        return false;
+    }
+}
+
+// Deliver reward (call this from experiment)
+async function deliverReward(rewardCount) {
+    if (!ble.connected) {
+        console.log('BLE not connected - skipping pump');
+        return;
+    }
+    
+    console.log("Delivering " + rewardCount + " rewards via pump");
+    
+    for (let i = 0; i < rewardCount; i++) {
+        await triggerPump(100);  // 100ms pump duration (adjust as needed)
+        await new Promise(resolve => setTimeout(resolve, 300));  // Wait between rewards
+    }
+}
 
 //==================== RECONNECT BLE ====================//
 // adapted from: https://googlechrome.github.io/samples/web-bluetooth/automatic-reconnect.html
