@@ -345,9 +345,6 @@ async function presentSingleStimulus(image, imagePath, stimulusType) {
 // 6. TRIAL MANAGEMENT
 // ========================================
 
-let currentBlock = 1;  // Track which block we're on
-let trialWithinBlock = 0;  // Track trial within current block
-
 async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1} (Block ${currentBlock}, Trial ${trialWithinBlock + 1} of ${totalTrials})`);
     
