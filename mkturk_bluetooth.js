@@ -34,6 +34,13 @@ var ble = {
 }
 //================ INITIALIZE BLE VARIABLE (end) ================//
 
+// Convert number to 2-byte array (Int16)
+function toBytesInt16(num) {
+    var arr = new Uint8Array(2);
+    arr[0] = num & 0xFF;        // Low byte
+    arr[1] = (num >> 8) & 0xFF; // High byte
+    return arr;
+}
 
 //==================== CONNECT BLE ====================//
 function connectBLEButtonPromise(){
@@ -224,7 +231,10 @@ async function triggerPump(duration) {
 }
 
 // Deliver reward (call this from experiment)
+// Deliver reward (call this from experiment)
 async function deliverReward(rewardCount) {
+    console.log("deliverReward called with count: " + rewardCount);
+    
     if (!ble.connected) {
         console.log('BLE not connected - skipping pump');
         return;
@@ -233,9 +243,12 @@ async function deliverReward(rewardCount) {
     console.log("Delivering " + rewardCount + " rewards via pump");
     
     for (let i = 0; i < rewardCount; i++) {
-        await triggerPump(100);  // 100ms pump duration (adjust as needed)
-        await new Promise(resolve => setTimeout(resolve, 300));  // Wait between rewards
+        console.log("Triggering pump " + (i + 1) + " of " + rewardCount);
+        await writepumpdurationtoBLE(100);  // 100ms pump duration
+        await new Promise(resolve => setTimeout(resolve, 300));
     }
+    
+    console.log("Reward delivery complete");
 }
 
 //==================== RECONNECT BLE ====================//
@@ -302,36 +315,30 @@ function time(text) {
 //==================== RECONNECT BLE (end) ====================//
 
 //============== READ NOTIFICATIONS & WRITES ==============//
-async function writepumpdurationtoBLE(num){
-  var arrInt8 = toBytesInt16(num)
-  ble.twrite_pumpduration=performance.now()
-  try{
-    await ble.writepumpdurationcharacteristic.writeValue(arrInt8)
-      var textstr = 'wrote ble val >> ' + num + ', byte values ' + arrInt8
-      console.log(textstr)
-      ble.statustext = textstr
-      updateHeadsUpDisplay()
-      // updateStatusText()
-      // writeTextonBlankCanvas(textstr,25.5,20.5)
-  }
-  catch(error) {
-      var textstr = 'Could not write pump duration to ble device'
-      console.log(textstr)
-      ble.statustext = ble.statustext + "<br>" + textstr
-      updateStatusText()
-  }
-}
-
-function pingBLE(){
-  var arrInt8 = toBytesInt16(ble.ping_duration)
-  if (ble.connected == true){
-    console.log('Pinging BLE device')
-    ble.writeconnectioncharacteristic.writeValue(arrInt8)
-    pingTimer = setTimeout(function(){
-      clearTimeout(pingTimer);
-      pingBLE();
-    }, ble.ping_interval)
-  }
+async function writepumpdurationtoBLE(num) {
+    console.log("writepumpdurationtoBLE called with: " + num);
+    
+    if (!ble.connected) {
+        console.error('BLE not connected');
+        return false;
+    }
+    
+    if (!ble.pumpWriteCharacteristic) {
+        console.error('Pump characteristic not found');
+        return false;
+    }
+    
+    var arrInt8 = toBytesInt16(num);
+    console.log("Sending bytes: " + arrInt8[0] + ", " + arrInt8[1]);
+    
+    try {
+        await ble.pumpWriteCharacteristic.writeValue(arrInt8);
+        console.log('Wrote pump value: ' + num);
+        return true;
+    } catch(error) {
+        console.error('Could not write pump duration: ' + error.message);
+        return false;
+    }
 }
 
 function onPumpNotificationFromBLE(event){
