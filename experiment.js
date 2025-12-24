@@ -560,7 +560,10 @@ async function connectBluetooth() {
     console.log('Connect Bluetooth button clicked');
     
     try {
+        console.log('Requesting BLE device...');
         await requestBLEDevice();
+        
+        console.log('Connecting to device...');
         await connectBLEDeviceAndCacheCharacteristics();
         
         document.getElementById('ble-status').innerHTML = 'Connected!';
@@ -569,7 +572,10 @@ async function connectBluetooth() {
         
     } catch (error) {
         console.error('BLE connection error:', error);
-        document.getElementById('ble-status').innerHTML = 'Connection failed';
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        document.getElementById('ble-status').innerHTML = 'Connection failed: ' + (error.message || 'Unknown error');
         document.getElementById('ble-status').style.color = 'red';
     }
 }
