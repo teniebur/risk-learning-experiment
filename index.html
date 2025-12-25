@@ -141,6 +141,43 @@
     
     <!-- Debug Log (visible on screen) -->
     <div id="debug-log">DEBUG LOG:<br></div>
+
+    <div id="instructions">
+    <h1>Risk Learning Experiment</h1>
+    <p>In this experiment, you will see different options appear on screen.</p>
+    <p>Click on the option you prefer when it appears.</p>
+    <p>You will hear reward sounds based on your choices.</p>
+    
+    <!-- Subject Selection -->
+    <div id="subject-section" style="margin: 20px 0; padding: 15px; background: #d0e0f0; border-radius: 5px;">
+        <label for="subject-select"><strong>Select Subject:</strong></label>
+        <select id="subject-select" style="margin: 10px; padding: 5px; font-size: 16px;">
+            <option value="">-- Select Subject --</option>
+            <option value="RiskLearningSubject">RiskLearningSubject</option>
+            <!-- Add more subjects here -->
+        </select>
+        <span id="subject-status" style="margin-left: 10px; color: gray;"></span>
+    </div>
+    
+    <!-- BLE Device Selection -->
+    <div id="ble-section" style="margin: 20px 0; padding: 15px; background: #e0e0e0; border-radius: 5px;">
+            <label for="ble-device-select"><strong>Select BLE Device:</strong></label>
+            <select id="ble-device-select" style="margin: 10px; padding: 5px;">
+                <option value="BLENano_Dev" selected>BLENano_Dev (Feather)</option>
+                <option value="BLENano_Bo">BLENano_Bo</option>
+                <option value="BLENano_PumpRFID_Setta">BLENano_PumpRFID_Setta</option>
+                <option value="BLENano_">Any BLENano device</option>
+                <option value="other">Other (scan all)</option>
+            </select>
+            <br>
+            <button id="connect-ble-button">Connect Bluetooth</button>
+            <span id="ble-status" style="margin-left: 10px; color: gray;">Not connected</span>
+        </div>
+        
+        <button id="test-pump-button" style="background-color: #0066ff;">Test Pump</button>
+        <button id="clear-storage-button" style="background-color: #ff6600;">Clear Dropbox Token</button>
+        <button id="start-button">Start Experiment</button>
+    </div>
     
     <!-- Load MKTurk framework files -->
     <script src="mkturk_installsettings.js"></script>
