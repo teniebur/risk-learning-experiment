@@ -185,6 +185,8 @@
             <option value="">-- Select Experiment --</option>
             <option value="detection">Detection Task (Single Stimulus)</option>
             <option value="choice">Choice Task (Two Stimuli)</option>
+            <option value="gamble_vs_sure">Gamble vs Sure</option>
+            <option value="gamble_vs_gamble">Gamble vs Gamble</option>
         </select>
         <span id="experiment-status" style="margin-left: 10px; color: gray;"></span>
     </div>
@@ -301,6 +303,12 @@
                     break;
                 case 'choice':
                     scriptName = 'experiment_choice.js';
+                    break;
+                case 'gamble_vs_sure':
+                    scriptName = 'experiment_gamble_vs_sure.js';
+                    break;
+                case 'gamble_vs_gamble':
+                    scriptName = 'experiment_gamble_vs_gamble.js';
                     break;
                 default:
                     console.error('Unknown experiment type:', experimentType);
