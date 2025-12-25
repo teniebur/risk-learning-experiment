@@ -149,8 +149,6 @@ async function requestBLEDevice(){
         let deviceName = selectedDevice ? selectedDevice.value : 'BLENano_';
         
         let options;
-        
-        let options;
 
         if (deviceName === 'other') {
             options = {
