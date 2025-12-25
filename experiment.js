@@ -450,20 +450,18 @@ async function runTrial() {
     
     // Process response
     if (response.correct) {
-        console.log('Correct response!');
-        
-        // Determine reward based on stimulus type
-        rewardResult = determineRewardCount(stimulusData.path, stimulusData.type);
-        
-        // Show outcome
-        await showOutcome(rewardResult.rewardCount, response.position);
-        
-        // Deliver liquid reward via pump (if BLE connected)
-        await deliverReward(rewardResult.rewardCount);
-        
-        // Play reward feedback (sound)
-        await playRewardFeedback(rewardResult.rewardCount);
-    } else {
+    console.log('Correct response!');
+    
+    // Determine reward based on stimulus type
+    rewardResult = determineRewardCount(stimulusData.path, stimulusData.type);
+    
+    // Show outcome and deliver reward together
+    await showOutcomeAndDeliverReward(rewardResult.rewardCount, response.position);
+    // OLD: Remove these lines
+    // await showOutcome(rewardResult.rewardCount, response.position);
+    // await deliverReward(rewardResult.rewardCount);
+    // await playRewardFeedback(rewardResult.rewardCount);
+}else {
         console.log('Incorrect response or timeout');
     }
     
@@ -580,6 +578,72 @@ async function connectBluetooth() {
     }
 }
 
+// ========================================
+// COMBINED OUTCOME AND REWARD DELIVERY
+// ========================================
+
+async function showOutcomeAndDeliverReward(rewardCount, position) {
+    // Clear display for 100ms
+    clearDisplay();
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Find the corresponding sure stimulus image
+    const sureFilename = `sure${rewardCount}.png`;
+    const sureStimulus = loadedImages.find(img => 
+        img.path.toLowerCase().endsWith(sureFilename)
+    );
+    
+    let outcomeStimulus = null;
+    
+    if (sureStimulus) {
+        // Show the sure stimulus at the same position
+        outcomeStimulus = showStimulus(sureStimulus.image, position);
+    } else {
+        console.warn(`Could not find sure stimulus for reward count: ${rewardCount}`);
+    }
+    
+    // Deliver rewards with sound (outcome stays visible)
+    console.log("Delivering " + rewardCount + " rewards");
+    
+    for (let i = 0; i < rewardCount; i++) {
+        console.log("Reward " + (i + 1) + " of " + rewardCount);
+        
+        // Trigger pump
+        if (ble.connected) {
+            await writepumpdurationtoBLE(100);
+        }
+        
+        // Play sound
+        await playSingleRewardSound();
+        
+        // Wait between rewards
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    console.log("Reward delivery complete");
+    
+    // Now hide the outcome stimulus
+    if (outcomeStimulus) {
+        hideStimulus(outcomeStimulus);
+    }
+}
+
+// Play a single reward sound
+async function playSingleRewardSound() {
+    try {
+        if (sounds && sounds.buffer && sounds.buffer[0]) {
+            var source = audiocontext.createBufferSource();
+            source.buffer = sounds.buffer[0];
+            source.connect(audiocontext.destination);
+            source.start(0);
+            
+            // Wait for sound to finish
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+    } catch (error) {
+        console.error('Error playing sound:', error);
+    }
+}
 // Add event listener for BLE button
 document.getElementById('connect-ble-button').addEventListener('click', connectBluetooth);
 
