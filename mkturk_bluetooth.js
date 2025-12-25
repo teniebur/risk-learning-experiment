@@ -442,5 +442,9 @@ function onRFIDNotificationFromBLE(event){
     ble.statustext = textstr
     updateHeadsUpDisplay()
 }
+function updateHeadsUpDisplay() {
+    // Placeholder function - does nothing but prevents error
+    console.log("updateHeadsUpDisplay called");
+}
 console.log("mkturk_bluetooth.js FINISHED - requestBLEDevice exists: " + (typeof requestBLEDevice));
 //============== READ NOTIFICATIONS & WRITES (end) ==============//
