@@ -8,7 +8,8 @@ console.log("EXPERIMENT.JS LOADED - VERSION 34 - " + new Date());
 let currentTrial = 0;
 let totalTrials = 0;  // Will be set after loading images
 let experimentData = [];
-let params = {};
+let params = {};           // Subject parameters
+let subjectName = "";      // Current subject name
 let loadedImages = [];  // Array of {image: Image, path: string, type: 'sure'|'gamble'}
 let trialOrder = [];    // Randomized order of stimulus indices
 let currentBlock = 1;      // ADD THIS
@@ -17,6 +18,35 @@ let trialWithinBlock = 0;  // ADD THIS
 // ========================================
 // 1. LOAD ASSETS FROM DROPBOX
 // ========================================
+// ========================================
+// LOAD SUBJECT PARAMETERS
+// ========================================
+
+async function loadSubjectParameters(subject) {
+    console.log("Loading parameters for subject: " + subject);
+    
+    const paramPath = `/mkturkfolders/parameterfiles/subjects/${subject}_params.txt`;
+    
+    try {
+        const response = await dbx.filesDownload({ path: paramPath });
+        const blob = response.result.fileBlob;
+        const text = await blob.text();
+        
+        params = JSON.parse(text);
+        console.log("Parameters loaded:", params);
+        
+        document.getElementById('subject-status').innerHTML = 'Parameters loaded!';
+        document.getElementById('subject-status').style.color = 'green';
+        
+        return true;
+        
+    } catch (error) {
+        console.error("Error loading parameters:", error);
+        document.getElementById('subject-status').innerHTML = 'Failed to load parameters!';
+        document.getElementById('subject-status').style.color = 'red';
+        return false;
+    }
+}
 
 // Custom image loading function
 async function loadImageFromDropboxCustom(imagePath) {
@@ -160,34 +190,34 @@ function shuffleArray(array) {
 
 async function saveDataToDropbox() {
     console.log("Attempting to save data to Dropbox...");
-    console.log("Data to save:", experimentData);
     
     try {
-        // Subject name
-        const subjectName = "RiskLearningSubject";
+        // Use selected subject name
+        const subject = subjectName || "UnknownSubject";
         
         // Create filename with timestamp
         const now = new Date();
         const timestamp = now.toISOString().replace(/[:.]/g, '-');
-        const filename = `/mkturkfolders/datafiles/${subjectName}/${subjectName}_${timestamp}.json`;
+        const filename = `/mkturkfolders/datafiles/${subject}/${subject}_${timestamp}.json`;
         
         console.log("Saving to filename:", filename);
         
         // Prepare data object
         const dataToSave = {
             experimentInfo: {
-                subject: subjectName,
+                subject: subject,
+                parameters: params,
                 startTime: experimentData[0]?.timestamp || now.toISOString(),
                 endTime: now.toISOString(),
                 totalTrials: currentTrial,
-                version: "15"
+                totalBlocks: currentBlock,
+                version: "38"
             },
             trials: experimentData
         };
         
         // Convert to JSON string
         const dataString = JSON.stringify(dataToSave, null, 2);
-        console.log("Data string length:", dataString.length);
         
         // Upload to Dropbox
         const response = await dbx.filesUpload({
@@ -197,11 +227,9 @@ async function saveDataToDropbox() {
         });
         
         console.log("SUCCESS! Data saved to Dropbox:", response);
-        console.log("Filename:", filename);
         
     } catch (error) {
         console.error("ERROR saving data to Dropbox:", error);
-        console.error("Error details:", error.message);
     }
 }
 
@@ -515,13 +543,29 @@ async function runTrial() {
 async function startExperiment() {
     console.log('Starting experiment...');
     
+    // Check if subject is selected
+    const subjectSelect = document.getElementById('subject-select');
+    subjectName = subjectSelect.value;
+    
+    if (!subjectName) {
+        alert('Please select a subject first!');
+        return;
+    }
+    
+    // Load subject parameters
+    const paramsLoaded = await loadSubjectParameters(subjectName);
+    if (!paramsLoaded) {
+        alert('Failed to load subject parameters. Check console for details.');
+        return;
+    }
+    
     // Initialize audio context (requires user interaction)
     initializeAudio();
     
     // Load assets from Dropbox
     await loadAssetsFromDropbox();
     
-    console.log(`Experiment will have ${totalTrials} trials`);
+    console.log(`Experiment will have ${totalTrials} stimuli per block`);
     
     // Hide instructions, show experiment
     document.getElementById('instructions').style.display = 'none';
@@ -529,7 +573,6 @@ async function startExperiment() {
     
     // Add black background class to body
     document.body.classList.add('experiment-running');
-    console.log('Added experiment-running class to body');
     
     // Start first trial
     runTrial();
@@ -596,32 +639,31 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
     let outcomeStimulus = null;
     
     if (sureStimulus) {
-        // Show the sure stimulus at the same position
         outcomeStimulus = showStimulus(sureStimulus.image, position);
-    } else {
-        console.warn(`Could not find sure stimulus for reward count: ${rewardCount}`);
     }
     
-    // Deliver rewards with sound (outcome stays visible)
+    // Get pump duration from params (default 100ms)
+    const pumpDuration = params.PumpDuration || 100;
+    
+    // Deliver rewards with sound
     console.log("Delivering " + rewardCount + " rewards");
     
     for (let i = 0; i < rewardCount; i++) {
         console.log("Reward " + (i + 1) + " of " + rewardCount);
-
-        // Play sound
+        
+        // Play sound first (CS)
         await playSingleRewardSound();
-        // Trigger pump
+        
+        // Then trigger pump (US)
         if (ble.connected) {
-            await writepumpdurationtoBLE(100);
+            await writepumpdurationtoBLE(pumpDuration);
         }
         
         // Wait between rewards
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
-    console.log("Reward delivery complete");
-    
-    // Now hide the outcome stimulus
+    // Hide outcome stimulus
     if (outcomeStimulus) {
         hideStimulus(outcomeStimulus);
     }
