@@ -70,6 +70,16 @@ risk-learning-experiment/          # GitHub Repository (Root)
 - **Response**: Choose either gamble
 - **Reward**: Probabilistic outcome of chosen gamble
 
+### 5. Sure vs Gamble vs Gamble (`experiment_suree_vs_2gambles.js`)
+- **Description**: Two gamble and one sure stimuli appear simultaneously
+- **Response**: Choose either gamble or sure
+- **Reward**: Probabilistic outcome of chosen gamble
+
+### 6. Gamble vs Gamble vs Gamble (`experiment_3gambles.js`)
+- **Description**: Three gamble stimuli appear simultaneously
+- **Response**: Choose either gamble
+- **Reward**: Probabilistic outcome of chosen gamble
+
 ---
 
 ## 🎰 Stimulus Naming Conventions
