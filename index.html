@@ -187,6 +187,8 @@
             <option value="choice">Choice Task (Two Stimuli)</option>
             <option value="gamble_vs_sure">Gamble vs Sure</option>
             <option value="gamble_vs_gamble">Gamble vs Gamble</option>
+            <option value="sure_vs_2gambles">Sure vs 2 Gambles</option>
+            <option value="3gambles">3 Gambles</option>
         </select>
         <span id="experiment-status" style="margin-left: 10px; color: gray;"></span>
     </div>
@@ -289,13 +291,11 @@
         let experimentLoaded = false;
         
         async function loadExperimentScript(experimentType) {
-            // Remove previously loaded experiment script if any
             const oldScript = document.getElementById('experiment-script');
             if (oldScript) {
                 oldScript.remove();
             }
             
-            // Determine which script to load
             let scriptName = '';
             switch(experimentType) {
                 case 'detection':
@@ -310,6 +310,12 @@
                 case 'gamble_vs_gamble':
                     scriptName = 'experiment_gamble_vs_gamble.js';
                     break;
+                case 'sure_vs_2gambles':
+                    scriptName = 'experiment_sure_vs_2gambles.js';
+                    break;
+                case '3gambles':
+                    scriptName = 'experiment_3gambles.js';
+                    break;
                 default:
                     console.error('Unknown experiment type:', experimentType);
                     return false;
@@ -317,11 +323,10 @@
             
             console.log('Loading experiment script:', scriptName);
             
-            // Load the script
             return new Promise((resolve, reject) => {
                 const script = document.createElement('script');
                 script.id = 'experiment-script';
-                script.src = scriptName + '?v=40';
+                script.src = scriptName + '?v=41';
                 script.onload = () => {
                     console.log('Loaded experiment script:', scriptName);
                     experimentLoaded = true;
