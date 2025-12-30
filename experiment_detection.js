@@ -690,24 +690,33 @@ async function connectBluetooth() {
 
 async function showOutcomeAndDeliverReward(rewardCount, position) {
     console.log("DEBUG OUTCOME: Starting showOutcomeAndDeliverReward with rewardCount:", rewardCount);
+    
     // Clear display for 100ms
     clearDisplay();
     await new Promise(resolve => setTimeout(resolve, 100));
     
     // Find the corresponding sure stimulus image
     const sureFilename = `sure${rewardCount}.png`;
-    const sureStimulus = loadedImages.find(img => 
+    console.log("DEBUG OUTCOME: Looking for:", sureFilename);
+    
+    const sureStimulus = loadedImages.sure.find(img => 
         img.path.toLowerCase().endsWith(sureFilename)
     );
+    
+    console.log("DEBUG OUTCOME: Found stimulus:", sureStimulus ? sureStimulus.path : "NOT FOUND");
     
     let outcomeStimulus = null;
     
     if (sureStimulus) {
         outcomeStimulus = showStimulus(sureStimulus.image, position);
+        console.log("DEBUG OUTCOME: Showing outcome stimulus");
+    } else {
+        console.log("DEBUG OUTCOME: No outcome stimulus found for reward count", rewardCount);
     }
     
     // Get pump duration from params (default 100ms)
     const pumpDuration = params.PumpDuration || 100;
+    console.log("DEBUG OUTCOME: Pump duration:", pumpDuration);
     
     // Deliver rewards with sound
     console.log("Delivering " + rewardCount + " rewards");
@@ -717,20 +726,29 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
         
         // Play sound first (CS)
         await playSingleRewardSound();
+        console.log("DEBUG OUTCOME: Sound played");
         
         // Then trigger pump (US)
         if (ble.connected) {
+            console.log("DEBUG OUTCOME: BLE connected, triggering pump");
             await writepumpdurationtoBLE(pumpDuration);
+        } else {
+            console.log("DEBUG OUTCOME: BLE not connected, skipping pump");
         }
         
         // Wait between rewards
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
+    console.log("DEBUG OUTCOME: Reward delivery complete");
+    
     // Hide outcome stimulus
     if (outcomeStimulus) {
         hideStimulus(outcomeStimulus);
+        console.log("DEBUG OUTCOME: Outcome stimulus hidden");
     }
+    
+    console.log("DEBUG OUTCOME: showOutcomeAndDeliverReward complete");
 }
 
 // Play a single reward sound
