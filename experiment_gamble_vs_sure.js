@@ -16,6 +16,19 @@ let trialOrder = [];
 let currentBlock = 1;
 let trialWithinBlock = 0;
 
+function generateTrialOrder() {
+    trialOrder = shuffleArray(trialOrder);
+    totalTrials = trialOrder.length;
+    console.log("Generated trial order with " + totalTrials + " trials");
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 // ========================================
 // LOAD ASSETS FROM DROPBOX
 // ========================================
@@ -72,10 +85,28 @@ async function loadRewardSound() {
 }
 
 async function loadAssetsFromDropbox() {
-    console.log("Loading assets from Dropbox...");
+    console.log("Loading assets...");
     
     try {
-        // Load sure options
+        // Try to load from cache first
+        if (!isOnline) {
+            console.log("Offline mode - loading from cache");
+            const cachedSure = getCachedImages(CACHE_KEYS.SURE_IMAGES);
+            const cachedGamble = getCachedImages(CACHE_KEYS.GAMBLE_IMAGES);
+            
+            if (cachedSure && cachedGamble) {
+                loadedImages.sure = cachedSure;
+                loadedImages.gamble = cachedGamble;
+                console.log("Loaded from cache successfully");
+                generateTrialOrder();
+                return;
+            } else {
+                alert("No cached data available. Please connect to internet first.");
+                return;
+            }
+        }
+        
+        // Online - load from Dropbox and cache
         const sureImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/sure_options");
         console.log("Sure options found:", sureImagePaths.length);
         
@@ -88,7 +119,6 @@ async function loadAssetsFromDropbox() {
             });
         }
         
-        // Load gamble options
         const gambleImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/gamble_options");
         console.log("Gamble options found:", gambleImagePaths.length);
         
@@ -101,16 +131,18 @@ async function loadAssetsFromDropbox() {
             });
         }
         
-        console.log("Total sure images:", loadedImages.sure.length);
-        console.log("Total gamble images:", loadedImages.gamble.length);
+        console.log("Total images loaded:", loadedImages.sure.length + loadedImages.gamble.length);
         
-        // Generate trial pairs (each gamble paired with a random sure)
-        generateTrialPairs();
+        // Cache the images
+        cacheImages(CACHE_KEYS.SURE_IMAGES, loadedImages.sure);
+        cacheImages(CACHE_KEYS.GAMBLE_IMAGES, loadedImages.gamble);
         
+        generateTrialOrder();
         await loadRewardSound();
         
     } catch (error) {
         console.error("Error loading assets:", error);
+        alert("Failed to load assets. Check internet connection.");
     }
 }
 
@@ -516,7 +548,7 @@ async function runTrial() {
     // Check if block complete
     if (trialWithinBlock >= totalTrials) {
         console.log(`Block ${currentBlock} complete. Reshuffling...`);
-        trialOrder = shuffleArray(trialOrder);
+        trialOrder = shuffleArray([...trialOrder]);  // Shuffle the existing order
         trialWithinBlock = 0;
         currentBlock++;
     }
