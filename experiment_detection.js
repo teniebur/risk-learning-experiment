@@ -689,6 +689,7 @@ async function connectBluetooth() {
 // ========================================
 
 async function showOutcomeAndDeliverReward(rewardCount, position) {
+    console.log("DEBUG OUTCOME: Starting showOutcomeAndDeliverReward with rewardCount:", rewardCount);
     // Clear display for 100ms
     clearDisplay();
     await new Promise(resolve => setTimeout(resolve, 100));
