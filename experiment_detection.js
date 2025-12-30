@@ -590,7 +590,9 @@ async function runTrial() {
     
     if (trialWithinBlock >= totalTrials) {
         console.log(`Block ${currentBlock} complete. Reshuffling...`);
-        trialOrder = shuffleArray([...Array(loadedImages.length).keys()]);
+        const totalImages = loadedImages.sure.length + loadedImages.gamble.length;
+        trialOrder = shuffleArray([...Array(totalImages).keys()]);
+        console.log("Reshuffled trial order for block", currentBlock + 1);
         trialWithinBlock = 0;
         currentBlock++;
     }
