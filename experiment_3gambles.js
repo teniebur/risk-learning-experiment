@@ -3,7 +3,7 @@
 // Subject chooses between 3 gamble stimuli
 // ========================================
 
-console.log("EXPERIMENT_3GAMBLES.JS LOADED - VERSION 41 - " + new Date());
+console.log("EXPERIMENT_3GAMBLES.JS LOADED - VERSION 42 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
@@ -15,6 +15,24 @@ let loadedImages = { sure: [], gamble: [] };
 let trialOrder = [];
 let currentBlock = 1;
 let trialWithinBlock = 0;
+
+// ========================================
+// TRIAL ORDER GENERATION
+// ========================================
+
+function generateTrialOrder() {
+    trialOrder = shuffleArray(trialOrder);
+    totalTrials = trialOrder.length;
+    console.log("Generated trial order with " + totalTrials + " trials");
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
 
 // ========================================
 // LOAD ASSETS FROM DROPBOX
@@ -85,7 +103,7 @@ async function loadAssetsFromDropbox() {
                 loadedImages.sure = cachedSure;
                 loadedImages.gamble = cachedGamble;
                 console.log("Loaded from cache successfully");
-                generateTrialOrder();
+                generateTrialCombinations();
                 return;
             } else {
                 alert("No cached data available. Please connect to internet first.");
@@ -124,7 +142,7 @@ async function loadAssetsFromDropbox() {
         cacheImages(CACHE_KEYS.SURE_IMAGES, loadedImages.sure);
         cacheImages(CACHE_KEYS.GAMBLE_IMAGES, loadedImages.gamble);
         
-        generateTrialOrder();
+        generateTrialCombinations();
         await loadRewardSound();
         
     } catch (error) {
@@ -154,18 +172,9 @@ function generateTrialCombinations() {
     }
     
     // Shuffle
-    trialOrder = shuffleArray(trialOrder);
-    totalTrials = trialOrder.length;
+    generateTrialOrder();
     
     console.log("Generated " + totalTrials + " trial combinations (3 gambles)");
-}
-
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
 }
 
 // ========================================
@@ -220,7 +229,14 @@ async function loadSubjectParameters(subject) {
 // ========================================
 
 async function saveDataToDropbox() {
-    console.log("Saving data to Dropbox...");
+    console.log("Attempting to save data...");
+    
+    // If offline, save to local storage instead
+    if (!isOnline) {
+        console.log("Offline - saving to local storage");
+        saveDataLocally();
+        return;
+    }
     
     try {
         const subject = subjectName || "UnknownSubject";
@@ -237,7 +253,7 @@ async function saveDataToDropbox() {
                 endTime: now.toISOString(),
                 totalTrials: currentTrial,
                 totalBlocks: currentBlock,
-                version: "41"
+                version: "42"
             },
             trials: experimentData
         };
@@ -250,10 +266,41 @@ async function saveDataToDropbox() {
             mode: { '.tag': 'overwrite' }
         });
         
-        console.log("Data saved:", filename);
+        console.log("Data saved to Dropbox:", filename);
         
     } catch (error) {
-        console.error("Error saving data:", error);
+        console.error("Error saving to Dropbox:", error);
+        console.log("Falling back to local storage");
+        saveDataLocally();
+    }
+}
+
+function saveDataLocally() {
+    try {
+        const subject = subjectName || "UnknownSubject";
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const localKey = `experiment_data_${subject}_${timestamp}`;
+        
+        const dataToSave = {
+            experimentInfo: {
+                experimentType: "3gambles",
+                subject: subject,
+                parameters: params,
+                startTime: experimentData[0]?.timestamp || new Date().toISOString(),
+                endTime: new Date().toISOString(),
+                totalTrials: currentTrial,
+                totalBlocks: currentBlock,
+                version: "42",
+                savedLocally: true
+            },
+            trials: experimentData
+        };
+        
+        localStorage.setItem(localKey, JSON.stringify(dataToSave));
+        console.log("Data saved locally:", localKey);
+        
+    } catch (error) {
+        console.error("Error saving data locally:", error);
     }
 }
 
@@ -463,8 +510,12 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
     console.log("Delivering " + rewardCount + " rewards");
     
     for (let i = 0; i < rewardCount; i++) {
+        console.log("Reward " + (i + 1) + " of " + rewardCount);
+        
+        // Tone first (CS)
         await playSingleRewardSound();
         
+        // Then pump (US)
         if (ble.connected) {
             await writepumpdurationtoBLE(pumpDuration);
         }
@@ -472,6 +523,7 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
+    // Hide outcome stimulus
     if (outcomeStimulus) {
         hideStimulus(outcomeStimulus);
     }
@@ -547,7 +599,7 @@ async function runTrial() {
     
     if (trialWithinBlock >= totalTrials) {
         console.log(`Block ${currentBlock} complete. Reshuffling...`);
-        trialOrder = shuffleArray(trialOrder);
+        trialOrder = shuffleArray([...trialOrder]);
         trialWithinBlock = 0;
         currentBlock++;
     }
