@@ -71,32 +71,64 @@ async function loadRewardSound() {
 }
 
 async function loadAssetsFromDropbox() {
-    console.log("Loading assets from Dropbox...");
+    console.log("Loading assets...");
     
     try {
-        // Only load sure options for this task
-        const sureImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/sure_options");
+        // Try to load from cache first
+        if (!isOnline) {
+            console.log("Offline mode - loading from cache");
+            const cachedSure = getCachedImages(CACHE_KEYS.SURE_IMAGES);
+            const cachedGamble = getCachedImages(CACHE_KEYS.GAMBLE_IMAGES);
+            
+            if (cachedSure && cachedGamble) {
+                loadedImages.sure = cachedSure;
+                loadedImages.gamble = cachedGamble;
+                console.log("Loaded from cache successfully");
+                generateTrialOrder();
+                return;
+            } else {
+                alert("No cached data available. Please connect to internet first.");
+                return;
+            }
+        }
         
+        // Online - load from Dropbox and cache
+        const sureImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/sure_options");
         console.log("Sure options found:", sureImagePaths.length);
         
         for (const path of sureImagePaths) {
             const image = await loadImageFromDropboxCustom(path);
-            loadedImages.push({
+            loadedImages.sure.push({
                 image: image,
                 path: path,
                 type: 'sure'
             });
         }
         
-        console.log("Total images loaded:", loadedImages.length);
+        const gambleImagePaths = await getDropboxFolderContents("/mkturkfolders/imagebags/gamble_options");
+        console.log("Gamble options found:", gambleImagePaths.length);
         
-        // Generate all unique pairs for comparison
-        generateTrialPairs();
+        for (const path of gambleImagePaths) {
+            const image = await loadImageFromDropboxCustom(path);
+            loadedImages.gamble.push({
+                image: image,
+                path: path,
+                type: 'gamble'
+            });
+        }
         
+        console.log("Total images loaded:", loadedImages.sure.length + loadedImages.gamble.length);
+        
+        // Cache the images
+        cacheImages(CACHE_KEYS.SURE_IMAGES, loadedImages.sure);
+        cacheImages(CACHE_KEYS.GAMBLE_IMAGES, loadedImages.gamble);
+        
+        generateTrialOrder();
         await loadRewardSound();
         
     } catch (error) {
         console.error("Error loading assets:", error);
+        alert("Failed to load assets. Check internet connection.");
     }
 }
 
@@ -138,17 +170,39 @@ function shuffleArray(array) {
 
 async function loadSubjectParameters(subject) {
     console.log("Loading parameters for subject: " + subject);
-    const paramPath = `/mkturkfolders/parameterfiles/subjects/${subject}_params.txt`;
     
     try {
+        // Try cache first
+        if (!isOnline) {
+            console.log("Offline - loading parameters from cache");
+            const cached = getCachedParameters(subject);
+            if (cached) {
+                params = cached;
+                console.log("Parameters loaded from cache");
+                document.getElementById('subject-status').innerHTML = 'Parameters (cached)';
+                document.getElementById('subject-status').style.color = 'orange';
+                return true;
+            } else {
+                alert("No cached parameters for this subject. Please connect to internet first.");
+                return false;
+            }
+        }
+        
+        // Online - load from Dropbox
+        const paramPath = `/mkturkfolders/parameterfiles/subjects/${subject}_params.txt`;
         const response = await dbx.filesDownload({ path: paramPath });
         const blob = response.result.fileBlob;
         const text = await blob.text();
         params = JSON.parse(text);
+        
+        // Cache parameters
+        cacheParameters(subject, params);
+        
         console.log("Parameters loaded:", params);
         document.getElementById('subject-status').innerHTML = 'Parameters loaded!';
         document.getElementById('subject-status').style.color = 'green';
         return true;
+        
     } catch (error) {
         console.error("Error loading parameters:", error);
         document.getElementById('subject-status').innerHTML = 'Failed to load parameters!';
