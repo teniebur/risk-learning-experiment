@@ -169,6 +169,12 @@
             border-top: 3px solid lime;
         }
     </style>
+
+    <!-- Connection Status Indicator -->
+    <div id="connection-status" style="position: fixed; top: 10px; right: 10px; z-index: 10001; padding: 8px 12px; background: #333; color: green; border-radius: 4px; font-size: 12px; font-weight: bold;">
+        🟢 Online
+    </div>    
+    
 </head>
 <body>
     <!-- Instructions Screen -->
@@ -253,6 +259,7 @@
     <script src="mkturk_utils.js"></script>
     <script src="mkturk_ImageBuffer.js"></script>
     <script src="mkturk_bluetooth.js?v=42"></script>
+    <script src="mkturk_offline.js"></script>
     
     <!-- Initialize Dropbox and Audio -->
     <script>
