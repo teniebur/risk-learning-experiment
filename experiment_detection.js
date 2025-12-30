@@ -524,38 +524,36 @@ function getStimulusAtIndex(index) {
 async function runTrial() {
     console.log(`Starting trial ${currentTrial + 1} (Block ${currentBlock}, Trial ${trialWithinBlock + 1} of ${totalTrials})`);
     
-    // Get the stimulus for this trial (randomized order)
     const stimulusIndex = trialOrder[trialWithinBlock];
-    const stimulusData = getStimulusAtIndex(stimulusIndex);  // Use helper function
+    const stimulusData = getStimulusAtIndex(stimulusIndex);
     
     console.log(`Presenting: ${stimulusData.path} (${stimulusData.type})`);
     
-    // Present single stimulus
     const response = await presentSingleStimulus(
         stimulusData.image, 
         stimulusData.path, 
         stimulusData.type
     );
     
-    // Determine reward (handles both sure and gamble options)
+    console.log("DEBUG 1: Response received:", response);
+    
     let rewardResult = { rewardCount: 0, outcome: 'none' };
     
-    // Process response
     if (response.correct) {
-    console.log('Correct response!');
-    
-    // Determine reward based on stimulus type
-    rewardResult = determineRewardCount(stimulusData.path, stimulusData.type);
-    
-    // Show outcome and deliver reward together
-    await showOutcomeAndDeliverReward(rewardResult.rewardCount, response.position);
-    // OLD: Remove these lines
-    // await showOutcome(rewardResult.rewardCount, response.position);
-    // await deliverReward(rewardResult.rewardCount);
-    // await playRewardFeedback(rewardResult.rewardCount);
-}else {
+        console.log('DEBUG 2: Correct response!');
+        
+        console.log('DEBUG 3: Calling determineRewardCount...');
+        rewardResult = determineRewardCount(stimulusData.path, stimulusData.type);
+        console.log('DEBUG 4: Reward result:', rewardResult);
+        
+        console.log('DEBUG 5: Calling showOutcomeAndDeliverReward...');
+        await showOutcomeAndDeliverReward(rewardResult.rewardCount, response.position);
+        console.log('DEBUG 6: showOutcomeAndDeliverReward complete');
+    } else {
         console.log('Incorrect response or timeout');
     }
+    
+    console.log('DEBUG 7: Saving trial data...');
     
     // Save trial data
     experimentData.push({
@@ -575,28 +573,29 @@ async function runTrial() {
         timestamp: new Date().toISOString()
     });
     
-    // Save data to Dropbox every 10 trials (backup)
+    console.log('DEBUG 8: Trial data saved');
+    
     if ((currentTrial + 1) % 10 === 0) {
-        console.log("Triggering backup save at trial", currentTrial + 1);
+        console.log("DEBUG 9: Triggering backup save at trial", currentTrial + 1);
         await saveDataToDropbox();
+        console.log("DEBUG 10: Backup save complete");
     }
     
-    // Inter-trial interval (1 second blank screen)
+    console.log('DEBUG 11: Inter-trial interval...');
     await new Promise(resolve => setTimeout(resolve, 1000));
+    console.log('DEBUG 12: Inter-trial interval complete');
     
     currentTrial++;
     trialWithinBlock++;
     
-    // Check if we've completed all stimuli in this block
     if (trialWithinBlock >= totalTrials) {
-        // Reshuffle for next block
-        console.log(`Block ${currentBlock} complete. Reshuffling for block ${currentBlock + 1}...`);
+        console.log(`Block ${currentBlock} complete. Reshuffling...`);
         trialOrder = shuffleArray([...Array(loadedImages.length).keys()]);
         trialWithinBlock = 0;
         currentBlock++;
     }
     
-    // Continue running trials indefinitely
+    console.log('DEBUG 13: Calling runTrial recursively...');
     runTrial();
 }
 
