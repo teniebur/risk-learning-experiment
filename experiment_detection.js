@@ -2,7 +2,7 @@
 // RISK LEARNING EXPERIMENT - MAIN SCRIPT
 // ========================================
 
-console.log("EXPERIMENT_DETECTION.JS LOADED - VERSION 34 - " + new Date());
+console.log("EXPERIMENT_DETECTION.JS LOADED - VERSION 42 - " + new Date());
 
 // Global variables
 let currentTrial = 0;
@@ -155,6 +155,7 @@ async function loadAssetsFromDropbox() {
                 loadedImages.sure = cachedSure;
                 loadedImages.gamble = cachedGamble;
                 console.log("Loaded from cache successfully");
+                generateTrialOrder();  // Add this line
                 // Detection task doesn't need trial order generation
                 return;
             } else {
@@ -193,7 +194,10 @@ async function loadAssetsFromDropbox() {
         // Cache the images
         cacheImages(CACHE_KEYS.SURE_IMAGES, loadedImages.sure);
         cacheImages(CACHE_KEYS.GAMBLE_IMAGES, loadedImages.gamble);
-         
+
+        // Generate trial order
+        generateTrialOrder();
+        
         await loadRewardSound();
         
     } catch (error) {
@@ -481,6 +485,33 @@ async function showOutcome(rewardCount, position) {
 }
 
 // ========================================
+// GENERATE TRIAL ORDER
+// ========================================
+
+function generateTrialOrder() {
+    // Create array of indices for all loaded images
+    const totalImages = loadedImages.sure.length + loadedImages.gamble.length;
+    trialOrder = shuffleArray([...Array(totalImages).keys()]);
+    totalTrials = trialOrder.length;
+    
+    console.log("Generated trial order with " + totalTrials + " stimuli");
+}
+
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
+// Get stimulus by index
+function getStimulusAtIndex(index) {
+    const allStimuli = [...loadedImages.sure, ...loadedImages.gamble];
+    return allStimuli[index];
+}
+
+// ========================================
 // 7. TRIAL MANAGEMENT
 // ========================================
 
@@ -489,7 +520,7 @@ async function runTrial() {
     
     // Get the stimulus for this trial (randomized order)
     const stimulusIndex = trialOrder[trialWithinBlock];
-    const stimulusData = loadedImages[stimulusIndex];
+    const stimulusData = getStimulusAtIndex(stimulusIndex);  // Use helper function
     
     console.log(`Presenting: ${stimulusData.path} (${stimulusData.type})`);
     
