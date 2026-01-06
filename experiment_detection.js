@@ -646,16 +646,25 @@ async function startExperiment() {
 async function endExperiment() {
     console.log('Experiment complete!');
     console.log('Data:', experimentData);
-    
     // Save final data to Dropbox
     console.log("Saving final data...");
     await saveDataToDropbox();
     
     // Remove black background class
     document.body.classList.remove('experiment-running');
-    
     document.getElementById('experiment-container').style.display = 'none';
     document.getElementById('completion').style.display = 'block';
+
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
 }
 
 // ========================================
