@@ -17,24 +17,6 @@ let currentBlock = 1;
 let trialWithinBlock = 0;
 
 // ========================================
-// TRIAL ORDER GENERATION
-// ========================================
-
-function generateTrialOrder() {
-    trialOrder = shuffleArray(trialOrder);
-    totalTrials = trialOrder.length;
-    console.log("Generated trial order with " + totalTrials + " trials");
-}
-
-function shuffleArray(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-}
-
-// ========================================
 // LOAD ASSETS FROM DROPBOX
 // ========================================
 
@@ -169,7 +151,8 @@ function generateTrialCombinations() {
     }
     
     // Shuffle pairs
-    generateTrialOrder();
+    trialOrder = shuffleArray(trialOrder);
+    totalTrials = trialOrder.length;
     
     console.log("Generated " + totalTrials + " trial pairs");
 }
@@ -231,7 +214,7 @@ async function saveDataToDropbox() {
     // If offline, save to local storage instead
     if (!isOnline) {
         console.log("Offline - saving to local storage");
-        saveDataLocally();
+        saveDataLocally(subjectName, "choice", params, experimentData, currentTrial, currentBlock);
         return;
     }
     
@@ -268,92 +251,8 @@ async function saveDataToDropbox() {
     } catch (error) {
         console.error("Error saving to Dropbox:", error);
         console.log("Falling back to local storage");
-        saveDataLocally();
+        saveDataLocally(subjectName, "choice", params, experimentData, currentTrial, currentBlock);
     }
-}
-
-function saveDataLocally() {
-    try {
-        const subject = subjectName || "UnknownSubject";
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const localKey = `experiment_data_${subject}_${timestamp}`;
-        
-        const dataToSave = {
-            experimentInfo: {
-                experimentType: "choice",
-                subject: subject,
-                parameters: params,
-                startTime: experimentData[0]?.timestamp || new Date().toISOString(),
-                endTime: new Date().toISOString(),
-                totalTrials: currentTrial,
-                totalBlocks: currentBlock,
-                version: "42",
-                savedLocally: true
-            },
-            trials: experimentData
-        };
-        
-        localStorage.setItem(localKey, JSON.stringify(dataToSave));
-        console.log("Data saved locally:", localKey);
-        
-    } catch (error) {
-        console.error("Error saving data locally:", error);
-    }
-}
-
-// ========================================
-// STIMULUS DISPLAY FUNCTIONS
-// ========================================
-
-function showStimulus(image, position) {
-    const container = document.getElementById('experiment-container');
-    const img = image.cloneNode();
-    img.className = 'stimulus';
-    img.style.position = 'absolute';
-    img.style.width = '150px';
-    img.style.height = '150px';
-    img.style.cursor = 'pointer';
-    img.style.zIndex = '10';
-    
-    // Position relative to viewport, not container
-    if (position === 'left') {
-        img.style.left = '20%';
-    } else if (position === 'right') {
-        img.style.left = '80%';
-    } else if (position === 'center') {
-        img.style.left = '50%';
-    }
-    
-    img.style.top = '50%';
-    img.style.transform = 'translate(-50%, -50%)';
-    
-    container.appendChild(img);
-    return img;
-}
-
-function hideStimulus(stimulusElement) {
-    if (stimulusElement && stimulusElement.parentNode) {
-        stimulusElement.parentNode.removeChild(stimulusElement);
-    }
-}
-
-function clearDisplay() {
-    const container = document.getElementById('experiment-container');
-    const stimuli = container.querySelectorAll('.stimulus');
-    stimuli.forEach(stimulus => stimulus.remove());
-}
-
-// ========================================
-// GET REWARD VALUES
-// ========================================
-
-function getSureRewardValue(imagePath) {
-    const filename = imagePath.split('/').pop().toLowerCase();
-    const match = filename.match(/sure(\d+)\.png/);
-    if (match) {
-        return parseInt(match[1]);
-    }
-    return 0;
 }
 
 // ========================================
@@ -446,63 +345,6 @@ async function presentTwoChoices(stimulus1, stimulus2) {
 }
 
 // ========================================
-// REWARD DELIVERY
-// ========================================
-
-async function playSingleRewardSound() {
-    try {
-        if (sounds && sounds.buffer && sounds.buffer[0]) {
-            var source = audiocontext.createBufferSource();
-            source.buffer = sounds.buffer[0];
-            source.connect(audiocontext.destination);
-            source.start(0);
-            await new Promise(resolve => setTimeout(resolve, 200));
-        }
-    } catch (error) {
-        console.error('Error playing sound:', error);
-    }
-}
-
-async function showOutcomeAndDeliverReward(rewardCount, position) {
-    clearDisplay();
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const sureFilename = `sure${rewardCount}.png`;
-    const sureStimulus = loadedImages.sure.find(img => 
-        img.path.toLowerCase().endsWith(sureFilename)
-    );
-    
-    let outcomeStimulus = null;
-    
-    if (sureStimulus) {
-        outcomeStimulus = showStimulus(sureStimulus.image, position);
-    }
-    
-    const pumpDuration = params.PumpDuration || 100;
-    
-    console.log("Delivering " + rewardCount + " rewards");
-    
-    for (let i = 0; i < rewardCount; i++) {
-        console.log("Reward " + (i + 1) + " of " + rewardCount);
-        
-        // Tone first (CS)
-        await playSingleRewardSound();
-        
-        // Then pump (US)
-        if (ble.connected) {
-            await writepumpdurationtoBLE(pumpDuration);
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 200));
-    }
-    
-    // Hide outcome stimulus
-    if (outcomeStimulus) {
-        hideStimulus(outcomeStimulus);
-    }
-}
-
-// ========================================
 // TRIAL MANAGEMENT
 // ========================================
 
@@ -521,7 +363,7 @@ async function runTrial() {
     } else {
         // Always deliver reward for chosen stimulus (whether optimal or not)
         console.log('Chose:', response.chosenValue, '| Optimal:', response.optimalChoice ? 'Yes' : 'No');
-        await showOutcomeAndDeliverReward(response.chosenValue, response.choice);
+        await showOutcomeAndDeliverReward(response.chosenValue, response.choice, loadedImages, params, ble);
     }
     
     // Save trial data
@@ -602,15 +444,16 @@ async function startExperiment() {
     
     // Enter fullscreen automatically
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) { /* Safari */
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { /* IE11 */
-        elem.msRequestFullscreen();
-    }
+    const fullscreenPromise = elem.requestFullscreen ? elem.requestFullscreen() 
+        : elem.webkitRequestFullscreen ? elem.webkitRequestFullscreen()
+        : elem.msRequestFullscreen ? elem.msRequestFullscreen()
+        : Promise.reject('Fullscreen not supported');
+
+    fullscreenPromise.catch(err => {
+        console.error('Fullscreen error:', err);
+    });
     
-    // Start first trial (or runTrial() depending on your code)
+    // Start
     runTrial();
 }
 
@@ -621,14 +464,5 @@ async function endExperiment() {
     document.getElementById('experiment-container').style.display = 'none';
     document.getElementById('completion').style.display = 'block';
     
-    // Exit fullscreen
-    if (document.fullscreenElement) {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-    }
+    exitFullscreen();
 }
