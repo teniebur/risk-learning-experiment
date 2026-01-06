@@ -374,6 +374,9 @@ function showStimulus(image, position) {
     img.style.width = '150px';
     img.style.height = '150px';
     img.style.cursor = 'pointer';
+    img.style.zIndex = '10';
+    img.style.WebkitTapHighlightColor = 'transparent';
+    img.style.outline = 'none';
     
     // Position based on left, right, or center
     if (position === 'left') {
