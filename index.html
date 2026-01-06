@@ -94,6 +94,9 @@
         -ms-user-select: none;
         outline: none;
         box-shadow: none;
+        -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        pointer-events: auto;
     }
 
     body.experiment-running #experiment-container {
@@ -111,16 +114,17 @@
         z-index: 10;
         user-select: none;
         -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        outline: none;
-        box-shadow: none;
         -webkit-tap-highlight-color: transparent;
+        -webkit-touch-callout: none;
+        outline: none !important;
+        box-shadow: none !important;
     }
     
-    .stimulus:active {
-        outline: none;
-        box-shadow: none;
+    .stimulus:active,
+    .stimulus:focus {
+        outline: none !important;
+        box-shadow: none !important;
+        background-color: transparent !important;
     }
 
     #completion {
