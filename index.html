@@ -60,6 +60,17 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
 
+    #instructions {
+        background-color: black;
+    }
+    
+    #instructions.hidden {
+        display: none !important;
+    }
+    
+    body.experiment-running #instructions {
+        display: none !important;
+    }
     body.experiment-running #instructions {
         display: none !important;
         background-color: black !important;
