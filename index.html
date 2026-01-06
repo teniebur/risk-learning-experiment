@@ -50,6 +50,7 @@
             background-color: black;
             padding: 0;
             margin: 0;
+            overflow: hidden;
         }
         
         #instructions, #experiment-container, #completion {
@@ -62,7 +63,9 @@
         }
         
         body.experiment-running #experiment-container {
-            max-width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100vw;
             height: 100vh;
             margin: 0;
@@ -70,6 +73,7 @@
             border-radius: 0;
             box-shadow: none;
             background-color: black;
+            z-index: 9999;
         }
 
         /* Hide elements during experiment */
@@ -81,6 +85,15 @@
         /* Optional: Hide the entire instructions section */
         body.experiment-running #instructions {
             display: none;
+        }
+
+        /* Hide scrollbars */
+        body.experiment-running {
+            overflow: hidden;
+        }
+        
+        html.experiment-running {
+            overflow: hidden;
         }
         
         #completion {
@@ -249,6 +262,7 @@
     <button id="test-pump-button" style="background-color: #0066ff;">Test Pump</button>
     <button id="clear-storage-button" style="background-color: #ff6600;">Clear Dropbox Token</button>
     <button id="start-button">Start Experiment</button>
+    <button id="fullscreen-btn" style="background-color: #FF6B35; margin-left: 10px;">Enter Fullscreen</button>
 </div>
     
     <!-- Experiment Screen -->
@@ -498,7 +512,26 @@
             debugLog.style.display = isHidden ? 'block' : 'none';
             this.textContent = isHidden ? 'Hide Debug' : 'Show Debug';
         });
+        async function endExperiment() {
+            console.log('Experiment complete!');
+            await saveDataToDropbox();
+            document.body.classList.remove('experiment-running');
+            document.getElementById('experiment-container').style.display = 'none';
+            document.getElementById('completion').style.display = 'block';
+            
+            // Exit fullscreen
+            if (document.fullscreenElement) {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                }
+            }
+        }
     </script>
+    
     
 </body>
 </html>
