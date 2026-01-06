@@ -17,18 +17,6 @@ let currentBlock = 1;
 let trialWithinBlock = 0;
 
 // ========================================
-// TRIAL ORDER GENERATION
-// ========================================
-
-function generateTrialOrder() {
-    trialOrder = shuffleArray(trialOrder);
-    totalTrials = trialOrder.length;
-    console.log("Generated trial order with " + totalTrials + " trials");
-}
-
-
-
-// ========================================
 // LOAD ASSETS FROM DROPBOX
 // ========================================
 
@@ -166,7 +154,8 @@ function generateTrialCombinations() {
     }
     
     // Shuffle
-    generateTrialOrder();
+    trialOrder = shuffleArray(trialOrder);
+    totalTrials = trialOrder.length;
     
     console.log("Generated " + totalTrials + " trial combinations (3 gambles)");
 }
@@ -228,7 +217,7 @@ async function saveDataToDropbox() {
     // If offline, save to local storage instead
     if (!isOnline) {
         console.log("Offline - saving to local storage");
-        saveDataLocally();
+        saveDataLocally(subjectName, "3gambles", params, experimentData, currentTrial, currentBlock);
         return;
     }
     
@@ -265,21 +254,9 @@ async function saveDataToDropbox() {
     } catch (error) {
         console.error("Error saving to Dropbox:", error);
         console.log("Falling back to local storage");
-        saveDataLocally();
+        saveDataLocally(subjectName, "3gambles", params, experimentData, currentTrial, currentBlock);
     }
 }
-
-// ========================================
-// STIMULUS DISPLAY FUNCTIONS
-// ========================================
-
-// see experiment_utils.js for definitions
-
-// ========================================
-// GET GAMBLE VALUES
-// ========================================
-
-// see experiment_utils.js for definitions
 
 // ========================================
 // THREE-CHOICE PRESENTATION
@@ -367,11 +344,6 @@ async function presentThreeGambles(gamble1Stimulus, gamble2Stimulus, gamble3Stim
         }, params.ChoiceTimeOut || 10000);
     });
 }
-
-// ========================================
-// REWARD DELIVERY
-// ========================================
-// see experiment_utils.js for definitions
 
 // ========================================
 // TRIAL MANAGEMENT
@@ -481,24 +453,17 @@ async function startExperiment() {
     document.getElementById('instructions').style.display = 'none';
     document.getElementById('experiment-container').style.display = 'block';
     document.body.classList.add('experiment-running');
+    
     // Enter fullscreen automatically
     const elem = document.documentElement;
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen();
-    } else if (elem.webkitRequestFullscreen) { /* Safari */
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { /* IE11 */
-        elem.msRequestFullscreen();
-    }
+    const fullscreenPromise = elem.requestFullscreen ? elem.requestFullscreen() 
+        : elem.webkitRequestFullscreen ? elem.webkitRequestFullscreen()
+        : elem.msRequestFullscreen ? elem.msRequestFullscreen()
+        : Promise.reject('Fullscreen not supported');
 
-    // Enter fullscreen automatically
-    setTimeout(() => {
-        const elem = document.documentElement;
-        const request = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
-        if (request) {
-            request.call(elem).catch(err => console.error('Fullscreen error:', err));
-        }
-    }, 100);
+    fullscreenPromise.catch(err => {
+        console.error('Fullscreen error:', err);
+    });
     
     runTrial();
 }
@@ -511,13 +476,5 @@ async function endExperiment() {
     document.getElementById('completion').style.display = 'block';
     
     // Exit fullscreen
-    if (document.fullscreenElement) {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) {
-            document.msExitFullscreen();
-        }
-    }
+    exitFullscreen();
 }
