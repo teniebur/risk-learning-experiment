@@ -694,20 +694,16 @@ async function connectBluetooth() {
 // ========================================
 
 async function showOutcomeAndDeliverReward(rewardCount, position) {
-    // Fade out current stimuli instead of clearing
+    // Immediately hide all stimuli without clearing
     const container = document.getElementById('experiment-container');
     const stimuli = container.querySelectorAll('.stimulus');
     
     stimuli.forEach(stimulus => {
-        stimulus.style.opacity = '0';
-        stimulus.style.transition = 'opacity 0.3s ease-out';
+        stimulus.style.display = 'none';
     });
     
-    // Wait for fade
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    // Remove faded stimuli
-    stimuli.forEach(stimulus => hideStimulus(stimulus));
+    // Wait a bit to avoid flash
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     const sureFilename = `sure${rewardCount}.png`;
     const sureStimulus = loadedImages.sure.find(img => 
@@ -718,12 +714,6 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
     
     if (sureStimulus) {
         outcomeStimulus = showStimulus(sureStimulus.image, position);
-        outcomeStimulus.style.opacity = '0';
-        // Fade in outcome
-        setTimeout(() => {
-            outcomeStimulus.style.transition = 'opacity 0.3s ease-in';
-            outcomeStimulus.style.opacity = '1';
-        }, 10);
     }
     
     const pumpDuration = params.PumpDuration || 100;
@@ -742,11 +732,7 @@ async function showOutcomeAndDeliverReward(rewardCount, position) {
         await new Promise(resolve => setTimeout(resolve, 200));
     }
     
-    // Fade out outcome stimulus
     if (outcomeStimulus) {
-        outcomeStimulus.style.transition = 'opacity 0.3s ease-out';
-        outcomeStimulus.style.opacity = '0';
-        await new Promise(resolve => setTimeout(resolve, 300));
         hideStimulus(outcomeStimulus);
     }
 }
