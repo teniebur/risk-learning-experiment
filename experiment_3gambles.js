@@ -646,6 +646,16 @@ async function startExperiment() {
     } else if (elem.msRequestFullscreen) { /* IE11 */
         elem.msRequestFullscreen();
     }
+
+    // Enter fullscreen automatically
+    setTimeout(() => {
+        const elem = document.documentElement;
+        const request = elem.requestFullscreen || elem.webkitRequestFullscreen || elem.msRequestFullscreen;
+        if (request) {
+            request.call(elem).catch(err => console.error('Fullscreen error:', err));
+        }
+    }, 100);
+    
     runTrial();
 }
 
