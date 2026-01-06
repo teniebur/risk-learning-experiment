@@ -647,4 +647,15 @@ async function endExperiment() {
     document.body.classList.remove('experiment-running');
     document.getElementById('experiment-container').style.display = 'none';
     document.getElementById('completion').style.display = 'block';
+    
+    // Exit fullscreen
+    if (document.fullscreenElement) {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+            document.msExitFullscreen();
+        }
+    }
 }
