@@ -154,7 +154,8 @@
     }
 
     <button id="test-pump-btn" style="background-color: #FF9800;">Test Pump</button>
-
+    <button id="feather-connect-btn" style="background-color: #FF6B35; margin: 5px;">Connect Feather (USB)</button>
+        
     #toggle-debug-btn {
         position: fixed;
         bottom: 10px;
@@ -576,11 +577,8 @@
 // WebUSB - Feather 32u4 Communication
 // ========================================
 
-let device = null;
-
 async function connectToFeather() {
     try {
-        // Request WebUSB device
         const devices = await navigator.usb.getDevices();
         
         if (devices.length > 0) {
@@ -627,7 +625,6 @@ async function sendPumpCommand(durationMs) {
     }
     
     try {
-        // Format: {duration}
         const command = `{${durationMs}}`;
         logDebug(`Sending: ${command}`);
         
@@ -635,7 +632,6 @@ async function sendPumpCommand(durationMs) {
         const data = encoder.encode(command);
         logDebug(`Data length: ${data.length} bytes`);
         
-        // Send to Feather (endpoint 1 for OUT)
         await device.transferOut(1, data);
         
         logDebug(`✓ Pump command sent`);
@@ -659,6 +655,7 @@ async function disconnectFeather() {
         document.getElementById('connection-status').style.color = 'red';
     }
 }
+
     </script>
     <!-- Debug output display -->
     <div id="debug-output" style="position: fixed; top: 50px; right: 10px; background: black; color: lime; padding: 10px; font-size: 10px; max-width: 200px; max-height: 150px; overflow-y: auto; border: 1px solid lime; z-index: 10000; display: none;">
