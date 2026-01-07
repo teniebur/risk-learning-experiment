@@ -107,6 +107,24 @@ async function showOutcomeAndDeliverReward(rewardCount, position, loadedImages, 
     if (outcomeStimulus) {
         hideStimulus(outcomeStimulus);
     }
+    
+    for (let i = 0; i < rewardCount; i++) {
+        console.log("Reward " + (i + 1) + " of " + rewardCount);
+        
+        await playSingleRewardSound();
+        
+        // Try BLE first
+        if (ble && ble.connected) {
+            await writepumpdurationtoBLE(pumpDuration);
+        } 
+        // Then try USB Serial
+        else if (serialPort) {
+            await sendPumpCommand(pumpDuration);
+        }
+        
+        await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
 }
 
 // ========================================
