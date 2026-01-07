@@ -522,7 +522,7 @@
         });
         
         document.getElementById('feather-connect-btn').addEventListener('click', async function() {
-            if (serialPort) {
+            if (device) {
                 await disconnectFeather();
                 this.textContent = 'Connect Feather (USB)';
             } else {
@@ -559,27 +559,40 @@
             }
         }
 
-        // ========================================
-// WEB SERIAL API - USB Device Communication
+// ========================================
+// WebUSB - Feather 32u4 Communication
 // ========================================
 
-let serialPort = null;
-let serialReader = null;
+let device = null;
 
 async function connectToFeather() {
     try {
-        // Request USB device
-        serialPort = await navigator.serial.requestPort();
+        // Request WebUSB device
+        const devices = await navigator.usb.getDevices();
         
-        // Open the port
-        await serialPort.open({ baudRate: 115200 });
+        if (devices.length > 0) {
+            device = devices[0];
+        } else {
+            device = await navigator.usb.requestDevice({ filters: [] });
+        }
+        
+        if (!device) {
+            console.error('No device selected');
+            return false;
+        }
+        
+        // Open the device
+        await device.open();
+        
+        // Set the configuration
+        await device.selectConfiguration(1);
+        
+        // Claim the interface
+        await device.claimInterface(2);
         
         console.log("Connected to Feather 32u4");
         document.getElementById('connection-status').innerHTML = '🟢 Feather Connected';
         document.getElementById('connection-status').style.color = 'green';
-        
-        // Start reading from serial
-        readFromSerial();
         
         return true;
     } catch (error) {
@@ -590,46 +603,22 @@ async function connectToFeather() {
     }
 }
 
-async function readFromSerial() {
-    try {
-        while (true) {
-            const reader = serialPort.readable.getReader();
-            try {
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    
-                    // Log serial output
-                    const text = new TextDecoder().decode(value);
-                    console.log("Feather:", text.trim());
-                }
-            } finally {
-                reader.releaseLock();
-            }
-        }
-    } catch (error) {
-        console.error('Serial read error:', error);
-    }
-}
-
 async function sendPumpCommand(durationMs) {
-    if (!serialPort || !serialPort.writable) {
-        console.warn('Serial port not connected');
+    if (!device) {
+        console.warn('Feather not connected');
         return false;
     }
     
     try {
-        // Create 2-byte command
-        const byte1 = durationMs & 0xFF;
-        const byte2 = (durationMs >> 8) & 0xFF;
-        const command = new Uint8Array([byte1, byte2]);
+        // Format: {duration}
+        const command = `{${durationMs}}`;
+        const encoder = new TextEncoder();
+        const data = encoder.encode(command);
         
         // Send to Feather
-        const writer = serialPort.writable.getWriter();
-        await writer.write(command);
-        writer.releaseLock();
+        await device.transferOut(1, data);
         
-        console.log(`Pump command sent: ${durationMs}ms`);
+        console.log(`Pump command sent: ${command}`);
         return true;
     } catch (error) {
         console.error('Failed to send pump command:', error);
@@ -638,12 +627,16 @@ async function sendPumpCommand(durationMs) {
 }
 
 async function disconnectFeather() {
-    if (serialPort) {
-        await serialPort.close();
-        serialPort = null;
-        console.log("Disconnected from Feather");
-        document.getElementById('connection-status').innerHTML = '🔴 Feather Disconnected';
-        document.getElementById('connection-status').style.color = 'red';
+    if (device) {
+        try {
+            await device.close();
+            device = null;
+            console.log("Disconnected from Feather");
+            document.getElementById('connection-status').innerHTML = '🔴 Feather Disconnected';
+            document.getElementById('connection-status').style.color = 'red';
+        } catch (error) {
+            console.error('Error closing device:', error);
+        }
     }
 }
     </script>
