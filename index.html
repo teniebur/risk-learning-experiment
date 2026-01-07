@@ -153,6 +153,8 @@
         background-color: #45a049;
     }
 
+    <button id="test-pump-btn" style="background-color: #FF9800;">Test Pump</button>
+
     #toggle-debug-btn {
         position: fixed;
         bottom: 10px;
@@ -405,6 +407,12 @@
                 });
         }
         
+        async function testPumpCommand() {
+            logDebug("Testing pump command...");
+            await sendPumpCommand(100);
+            logDebug("Test complete - check if pump triggered");
+        }
+        
     </script>
     
     <!-- Debug Logger (MUST BE LAST) -->
@@ -530,6 +538,9 @@
                 this.textContent = connected ? 'Disconnect Feather' : 'Connect Feather (USB)';
             }
         });
+
+        document.getElementById('test-pump-btn').addEventListener('click', testPumpCommand);
+        
     </script>
 
     <script>
