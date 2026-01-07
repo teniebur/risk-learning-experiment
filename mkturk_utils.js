@@ -387,7 +387,7 @@ async function showOutcomeAndDeliverReward(rewardCount, position, loadedImages, 
         await playSingleRewardSound();
         
         // Try Feather (USB) first
-        if (device) {
+        if (typeof sendPumpCommand === 'function') {
             logDebug(`Sending to Feather...`);
             await sendPumpCommand(pumpDuration);
         } 
@@ -395,9 +395,6 @@ async function showOutcomeAndDeliverReward(rewardCount, position, loadedImages, 
         else if (ble && ble.connected) {
             logDebug(`Sending to BLE...`);
             await writepumpdurationtoBLE(pumpDuration);
-        }
-        else {
-            logDebug(`No device connected`);
         }
         
         await new Promise(resolve => setTimeout(resolve, 200));
