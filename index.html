@@ -280,6 +280,11 @@
     <button id="toggle-debug-btn" style="position: fixed; bottom: 10px; right: 10px; z-index: 10000; background: #666; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Show Debug</button>
 
     
+    <script>
+    // Global variables for device connections
+    let device = null;  // Feather USB device
+    let ble = null;     // BLE device
+    </script>
     
     <!-- Load MKTurk framework files -->
     <script src="mkturk_installsettings.js"></script>
