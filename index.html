@@ -412,7 +412,7 @@
             await sendPumpCommand(100);
             logDebug("Test complete - check if pump triggered");
         }
-        
+        document.getElementById('test-pump-btn').addEventListener('click', testPumpCommand);
     </script>
     
     <!-- Debug Logger (MUST BE LAST) -->
@@ -538,8 +538,6 @@
                 this.textContent = connected ? 'Disconnect Feather' : 'Connect Feather (USB)';
             }
         });
-
-        document.getElementById('test-pump-btn').addEventListener('click', testPumpCommand);
         
     </script>
 
