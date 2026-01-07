@@ -606,22 +606,29 @@ async function connectToFeather() {
 }
 
 async function sendPumpCommand(durationMs) {
+    logDebug(`sendPumpCommand called: ${durationMs}ms`);
+    
     if (!device) {
         logDebug('Feather not connected');
         return false;
     }
     
     try {
+        // Format: {duration}
         const command = `{${durationMs}}`;
+        logDebug(`Sending: ${command}`);
+        
         const encoder = new TextEncoder();
         const data = encoder.encode(command);
+        logDebug(`Data length: ${data.length} bytes`);
         
+        // Send to Feather (endpoint 1 for OUT)
         await device.transferOut(1, data);
         
-        logDebug(`Pump sent: ${command}`);
+        logDebug(`✓ Pump command sent`);
         return true;
     } catch (error) {
-        logDebug(`Pump error: ${error.message}`);
+        logDebug(`✗ Pump error: ${error.message}`);
         return false;
     }
 }
