@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Risk Learning Experiment</title>
     
-    <!-- Suppress favicon error -->
-    <link rel="icon" href="data:,">
-
+    <!-- Add Dropbox SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/dropbox@10.34.0/dist/Dropbox-sdk.min.js"></script>
+    
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="risklearningexperimentlogo48.png">
     <link rel="icon" type="image/png" sizes="96x96" href="risklearningexperimentlogo96.png">
@@ -17,249 +17,240 @@
     <link rel="manifest" href="mkturkmanifest.json">
     <meta name="theme-color" content="#2196F3">
     
-    <!-- Add Dropbox SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/dropbox@10.34.0/dist/Dropbox-sdk.min.js"></script>
-    
     <style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    html {
-        background-color: black !important;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-    }
+        html {
+            background-color: black !important;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+        }
 
-    body {
-        background-color: black !important;
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        width: 100%;
-        font-family: Arial, sans-serif;
-    }
+        body {
+            background-color: black !important;
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            font-family: Arial, sans-serif;
+        }
 
-    body.experiment-running {
-        background-color: black !important;
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-    }
+        body.experiment-running {
+            background-color: black !important;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
 
-    #instructions {
-        max-width: 800px;
-        margin: 20px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
+        #instructions {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white !important;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-    #instructions {
-        background-color: black;
-    }
-    
-    #instructions.hidden {
-        display: none !important;
-    }
-    
-    body.experiment-running #instructions {
-        display: none !important;
-    }
-    body.experiment-running #instructions {
-        display: none !important;
-        background-color: black !important;
-    }
+        body.experiment-running #instructions {
+            display: none !important;
+            background-color: black !important;
+        }
 
-    #experiment-container {
-        display: none;
-        height: 100vh;
-        width: 100vw;
-        position: fixed;
-        top: 0;
-        left: 0;
-        margin: 0;
-        padding: 0;
-        background-color: black !important;
-        cursor: pointer;
-        z-index: 9999;
-        user-select: none;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        outline: none;
-        box-shadow: none;
-        -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
-        pointer-events: auto;
-    }
+        #experiment-container {
+            display: none;
+            height: 100vh;
+            width: 100vw;
+            position: fixed;
+            top: 0;
+            left: 0;
+            margin: 0;
+            padding: 0;
+            background-color: black !important;
+            cursor: pointer;
+            z-index: 9999;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            outline: none;
+            box-shadow: none;
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    body.experiment-running #experiment-container {
-        display: block !important;
-        background-color: black !important;
-    }
+        body.experiment-running #experiment-container {
+            display: block !important;
+            background-color: black !important;
+        }
 
-    /* Force all child elements to not change background */
-    #experiment-container * {
-        background-color: transparent !important;
-    }
-        
-    .stimulus {
-        transition: opacity 0.2s ease-in-out;
-        z-index: 10;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-tap-highlight-color: transparent;
-        -webkit-touch-callout: none;
-        outline: none !important;
-        box-shadow: none !important;
-    }
-    
-    .stimulus:active,
-    .stimulus:focus {
-        outline: none !important;
-        box-shadow: none !important;
-        background-color: transparent !important;
-    }
+        #experiment-container * {
+            background-color: transparent !important;
+        }
 
-    #completion {
-        display: none;
-        max-width: 800px;
-        margin: 20px auto;
-        background: white;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
+        .stimulus {
+            transition: opacity 0.2s ease-in-out;
+            z-index: 10;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            outline: none !important;
+            box-shadow: none !important;
+        }
 
-    button {
-        background-color: #4CAF50;
-        color: white;
-        padding: 15px 32px;
-        text-align: center;
-        font-size: 16px;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
-        margin: 5px;
-    }
+        .stimulus:hover {
+            opacity: 0.8;
+        }
 
-    button:hover {
-        background-color: #45a049;
-    }
+        .stimulus:active,
+        .stimulus:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            background-color: transparent !important;
+        }
 
-    <button id="test-pump-btn" style="background-color: #FF9800;">Test Pump</button>
-    <button id="feather-connect-btn" style="background-color: #FF6B35; margin: 5px;">Connect Feather (USB)</button>
-        
-    #toggle-debug-btn {
-        position: fixed;
-        bottom: 10px;
-        right: 10px;
-        z-index: 10000;
-        background: #666;
-        color: white;
-        padding: 8px 12px;
-        font-size: 12px;
-    }
+        #completion {
+            display: none;
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
 
-    #connection-status {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        z-index: 10001;
-        padding: 8px 12px;
-        background: #333;
-        color: green;
-        border-radius: 4px;
-        font-size: 12px;
-        font-weight: bold;
-    }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
 
-    #debug-log {
-        display: none;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 150px;
-        background: black;
-        color: lime;
-        font-family: monospace;
-        font-size: 12px;
-        overflow-y: scroll;
-        padding: 10px;
-        z-index: 9999;
-        border-top: 3px solid lime;
-    }
-</style>
+        button:hover {
+            background-color: #45a049;
+        }
 
+        #toggle-debug-btn {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            z-index: 10000;
+            background: #666;
+            color: white;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        #connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            z-index: 10001;
+            padding: 8px 12px;
+            background: #333;
+            color: green;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        #debug-log {
+            display: none;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 150px;
+            background: black;
+            color: lime;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-y: scroll;
+            padding: 10px;
+            z-index: 9999;
+            border-top: 3px solid lime;
+        }
+
+        #debug-output {
+            position: fixed;
+            top: 50px;
+            right: 10px;
+            background: black;
+            color: lime;
+            padding: 10px;
+            font-size: 10px;
+            max-width: 200px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid lime;
+            z-index: 10000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
     <!-- Connection Status Indicator -->
     <div id="connection-status" style="position: fixed; top: 10px; right: 10px; z-index: 10001; padding: 8px 12px; background: #333; color: green; border-radius: 4px; font-size: 12px; font-weight: bold;">
         🟢 Online
-    </div>    
-    
-</head>
-<body>
+    </div>
+
     <!-- Instructions Screen -->
-<div id="instructions">
-    <h1>Risk Learning Experiment v42</h1>
-    <p>In this experiment, you will see different options appear on screen.</p>
-    <p>Click on the option you prefer when it appears.</p>
-    <p>You will hear reward sounds based on your choices.</p>
-    
-    <!-- Experiment Selection -->
-    <div id="experiment-section" style="margin: 20px 0; padding: 15px; background: #f0d0f0; border-radius: 5px;">
-        <label for="experiment-select"><strong>Select Experiment:</strong></label>
-        <select id="experiment-select" style="margin: 10px; padding: 5px; font-size: 16px;">
-            <option value="">-- Select Experiment --</option>
-            <option value="detection">Detection Task (Single Stimulus)</option>
-            <option value="choice">Choice Task (Two Stimuli)</option>
-            <option value="gamble_vs_sure">Gamble vs Sure</option>
-            <option value="gamble_vs_gamble">Gamble vs Gamble</option>
-            <option value="sure_vs_2gambles">Sure vs 2 Gambles</option>
-            <option value="3gambles">3 Gambles</option>
-        </select>
-        <span id="experiment-status" style="margin-left: 10px; color: gray;"></span>
+    <div id="instructions">
+        <h1>Risk Learning Experiment v42</h1>
+        <p>In this experiment, you will see different options appear on screen.</p>
+        <p>Click on the option you prefer when it appears.</p>
+        <p>You will hear reward sounds based on your choices.</p>
+        
+        <div style="background-color: #f0f0f0; padding: 15px; margin: 15px 0; border-radius: 5px;">
+            <label for="experiment-select"><strong>Select Experiment:</strong></label>
+            <select id="experiment-select">
+                <option value="">-- Select Experiment --</option>
+                <option value="detection">Detection Task</option>
+                <option value="choice">Choice Task</option>
+                <option value="gamble_vs_sure">Gamble vs Sure</option>
+                <option value="gamble_vs_gamble">Gamble vs Gamble</option>
+                <option value="sure_vs_2gambles">Sure vs 2 Gambles</option>
+                <option value="3gambles">3 Gambles</option>
+            </select>
+        </div>
+
+        <div style="background-color: #e3f2fd; padding: 15px; margin: 15px 0; border-radius: 5px;">
+            <label for="subject-select"><strong>Select Subject:</strong></label>
+            <select id="subject-select">
+                <option value="">-- Select Subject --</option>
+            </select>
+        </div>
+
+        <div style="background-color: #f3e5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
+            <label for="ble-device-select"><strong>Select BLE Device:</strong></label>
+            <select id="ble-device-select">
+                <option value="BLENano_Bo">BLENano_Bo</option>
+            </select>
+            <button id="connect-ble-btn">Connect Bluetooth</button>
+            <span id="ble-status">Not connected</span>
+        </div>
+
+        <div style="background-color: #fff3e0; padding: 15px; margin: 15px 0; border-radius: 5px;">
+            <button id="test-pump-btn" style="background-color: #FF9800;">Test Pump</button>
+            <button id="feather-connect-btn" style="background-color: #FF6B35;">Connect Feather (USB)</button>
+            <button id="clear-token-btn" style="background-color: #f44336;">Clear Dropbox Token</button>
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button id="fullscreen-btn" style="background-color: #2196F3;">Enter Fullscreen</button>
+            <button id="start-button" style="background-color: #4CAF50; font-size: 18px; padding: 20px 40px;">Start Experiment</button>
+        </div>
     </div>
-    
-    <!-- Subject Selection -->
-    <div id="subject-section" style="margin: 20px 0; padding: 15px; background: #d0e0f0; border-radius: 5px;">
-        <label for="subject-select"><strong>Select Subject:</strong></label>
-        <select id="subject-select" style="margin: 10px; padding: 5px; font-size: 16px;">
-            <option value="">-- Select Subject --</option>
-            <option value="RiskLearningSubject">RiskLearningSubject</option>
-            <option value="NewSubject">NewSubject</option>
-        </select>
-        <span id="subject-status" style="margin-left: 10px; color: gray;"></span>
-    </div>
-    
-    <!-- BLE Device Selection -->
-    <div id="ble-section" style="margin: 20px 0; padding: 15px; background: #e0e0e0; border-radius: 5px;">
-        <label for="ble-device-select"><strong>Select BLE Device:</strong></label>
-        <select id="ble-device-select" style="margin: 10px; padding: 5px;">
-            <option value="BLENano_Dev">BLENano_Dev (Feather)</option>
-            <option value="BLENano_Bo" selected>BLENano_Bo</option>
-            <option value="BLENano_PumpRFID_Setta">BLENano_PumpRFID_Setta</option>
-            <option value="BLENano_">Any BLENano device</option>
-            <option value="other">Other (scan all)</option>
-        </select>
-        <br>
-        <button id="connect-ble-button">Connect Bluetooth</button>
-        <span id="ble-status" style="margin-left: 10px; color: gray;">Not connected</span>
-        <button id="feather-connect-btn" style="background-color: #FF6B35; margin: 5px;">Connect Feather (USB)</button>
-    </div>
-    
-    <!-- Action Buttons -->
-    <button id="test-pump-button" style="background-color: #0066ff;">Test Pump</button>
-    <button id="clear-storage-button" style="background-color: #ff6600;">Clear Dropbox Token</button>
-    <button id="fullscreen-btn" style="background-color: #FF6B35; margin-left: 10px;">Enter Fullscreen</button>
-    <button id="start-button" onclick="requestFullscreenThenStart()">Start Experiment</button>
-</div>
     
     <!-- Experiment Screen -->
     <div id="experiment-container">
@@ -271,36 +262,143 @@
         <h1>Experiment Complete!</h1>
         <p>Thank you for participating.</p>
     </div>
-    
-    <!-- Debug Log (hidden by default, toggle with button) -->
-    <div id="debug-log" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 150px; background: black; color: lime; font-family: monospace; font-size: 12px; overflow-y: scroll; padding: 10px; z-index: 9999; border-top: 3px solid lime;">
-        DEBUG LOG:<br>
-    </div>
-    
-    <!-- Toggle Debug Button -->
-    <button id="toggle-debug-btn" style="position: fixed; bottom: 10px; right: 10px; z-index: 10000; background: #666; color: white; padding: 8px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Show Debug</button>
 
-    
+    <!-- Debug output display -->
+    <div id="debug-output"></div>
+
+    <!-- Debug Log -->
+    <div id="debug-log">DEBUG LOG:<br></div>
+
+    <!-- Toggle Debug Button -->
+    <button id="toggle-debug-btn">Show Debug</button>
+
+    <!-- ========================================
+         GLOBAL VARIABLES
+         ======================================== -->
     <script>
-    // Global variables for device connections
-    let device = null;  // Feather USB device
+        window.device = null;  // Feather USB device
     </script>
-    
+
+    <!-- ========================================
+         WEBUSB - FEATHER 32u4 COMMUNICATION
+         ======================================== -->
+    <script>
+        async function connectToFeather() {
+            try {
+                const devices = await navigator.usb.getDevices();
+                
+                if (devices.length > 0) {
+                    window.device = devices[0];
+                    logDebug("Found existing device");
+                } else {
+                    logDebug("Requesting new device...");
+                    window.device = await navigator.usb.requestDevice({ filters: [] });
+                }
+                
+                if (!window.device) {
+                    logDebug('No device selected');
+                    return false;
+                }
+                
+                logDebug("Opening device...");
+                await window.device.open();
+                
+                logDebug("Selecting configuration...");
+                await window.device.selectConfiguration(1);
+                
+                logDebug("Claiming interface...");
+                await window.device.claimInterface(2);
+                
+                logDebug("Connected to Feather!");
+                document.getElementById('connection-status').innerHTML = '🟢 Feather Connected';
+                document.getElementById('connection-status').style.color = 'green';
+                
+                return true;
+            } catch (error) {
+                logDebug(`Connection error: ${error.message}`);
+                document.getElementById('connection-status').innerHTML = '🔴 Feather Not Found';
+                document.getElementById('connection-status').style.color = 'red';
+                return false;
+            }
+        }
+
+        async function sendPumpCommand(durationMs) {
+            logDebug(`sendPumpCommand called: ${durationMs}ms`);
+            
+            if (!window.device) {
+                logDebug('Feather not connected');
+                return false;
+            }
+            
+            try {
+                const command = `{${durationMs}}`;
+                logDebug(`Sending: ${command}`);
+                
+                const encoder = new TextEncoder();
+                const data = encoder.encode(command);
+                logDebug(`Data length: ${data.length} bytes`);
+                
+                await window.device.transferOut(1, data);
+                
+                logDebug(`✓ Pump command sent`);
+                return true;
+            } catch (error) {
+                logDebug(`✗ Pump error: ${error.message}`);
+                return false;
+            }
+        }
+
+        async function disconnectFeather() {
+            if (window.device) {
+                try {
+                    await window.device.close();
+                } catch (error) {
+                    logDebug(`Close error: ${error.message}`);
+                }
+                window.device = null;
+                logDebug("Feather disconnected");
+                document.getElementById('connection-status').innerHTML = '🔴 Feather Disconnected';
+                document.getElementById('connection-status').style.color = 'red';
+            }
+        }
+
+        async function testPumpCommand() {
+            logDebug("Testing pump command...");
+            await sendPumpCommand(100);
+            logDebug("Test complete - check if pump triggered");
+        }
+    </script>
+
+    <!-- ========================================
+         DEBUG LOGGER
+         ======================================== -->
+    <script>
+        function logDebug(message) {
+            console.log(message);
+            const debugDiv = document.getElementById('debug-output');
+            debugDiv.innerHTML += message + '<br>';
+            debugDiv.style.display = 'block';
+        }
+        
+        logDebug("Debug logger initialized!");
+    </script>
+
     <!-- Load MKTurk framework files -->
     <script src="mkturk_installsettings.js"></script>
     <script src="mkturk_globalvariables.js"></script>
     <script src="mkturk_dropbox.js"></script>
     <script src="mkturk_utils.js"></script>
     <script src="mkturk_ImageBuffer.js"></script>
-    <script src="mkturk_bluetooth.js?v=42"></script>
     <script src="mkturk_offline.js"></script>
-    
-    <!-- Initialize Dropbox and Audio -->
+
+    <!-- ========================================
+         DROPBOX INITIALIZATION
+         ======================================== -->
     <script>
         var dbx;
         var audiocontext;
         var sounds = { buffer: [] };
-        
+
         function initializeDropbox() {
             const urlParams = new URLSearchParams(window.location.hash.substring(1));
             let accessToken = urlParams.get('access_token');
@@ -312,240 +410,60 @@
             if (accessToken) {
                 localStorage.setItem('dropbox_access_token', accessToken);
                 dbx = new Dropbox.Dropbox({ accessToken: accessToken });
-                console.log("Dropbox initialized");
+                logDebug("Dropbox initialized");
                 return true;
             } else {
-                console.log("No access token, redirecting to Dropbox auth...");
+                logDebug("No access token found, redirecting to Dropbox auth...");
                 const authUrl = `https://www.dropbox.com/oauth2/authorize?client_id=${DBX_CLIENT_ID}&redirect_uri=${encodeURIComponent(window.location.origin + window.location.pathname)}&response_type=token`;
                 window.location.href = authUrl;
                 return false;
             }
         }
-        
+
         function initializeAudio() {
             if (!audiocontext) {
                 audiocontext = new (window.AudioContext || window.webkitAudioContext)();
-                console.log("Audio context initialized");
+                logDebug("Audio context initialized");
             }
         }
-        
+
         window.addEventListener('load', function() {
             initializeDropbox();
         });
     </script>
 
-    <!-- Load shared utilities FIRST -->
+    <!-- Load shared utilities -->
     <script src="experiment_utils.js?v=42"></script>
-    
-    <!-- Experiment Scripts - Loaded dynamically -->
+
+    <!-- Load experiment script dynamically -->
     <script>
         let experimentLoaded = false;
-    
+
         async function loadExperimentScript(experimentType) {
-            const oldScript = document.getElementById('experiment-script');
-            if (oldScript) {
-                oldScript.remove();
+            if (experimentLoaded) {
+                const script = document.querySelector('script[data-experiment]');
+                if (script) {
+                    script.remove();
+                }
             }
-            
-            let scriptName = '';
-            switch(experimentType) {
-                case 'detection':
-                    scriptName = 'experiment_detection.js';
-                    break;
-                case 'choice':
-                    scriptName = 'experiment_choice.js';
-                    break;
-                case 'gamble_vs_sure':
-                    scriptName = 'experiment_gamble_vs_sure.js';
-                    break;
-                case 'gamble_vs_gamble':
-                    scriptName = 'experiment_gamble_vs_gamble.js';
-                    break;
-                case 'sure_vs_2gambles':
-                    scriptName = 'experiment_sure_vs_2gambles.js';
-                    break;
-                case '3gambles':
-                    scriptName = 'experiment_3gambles.js';
-                    break;
-                default:
-                    console.error('Unknown experiment type:', experimentType);
-                    return false;
-            }
-            
-            console.log('Loading experiment script:', scriptName);
-            
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.id = 'experiment-script';
-                script.src = scriptName + '?v=42';
-                script.onload = () => {
-                    console.log('Loaded experiment script:', scriptName);
-                    experimentLoaded = true;
-                    resolve(true);
-                };
-                script.onerror = () => {
-                    console.error('Failed to load:', scriptName);
-                    reject(false);
-                };
-                document.body.appendChild(script);
-            });
+
+            const script = document.createElement('script');
+            script.src = `experiment_${experimentType}.js?v=42`;
+            script.setAttribute('data-experiment', experimentType);
+            document.body.appendChild(script);
+            experimentLoaded = true;
         }
 
-        function requestFullscreenThenStart() {
-            const elem = document.documentElement;
-            
-            // Request fullscreen first (requires user gesture)
-            const fullscreenPromise = elem.requestFullscreen ? elem.requestFullscreen()
-                : elem.webkitRequestFullscreen ? elem.webkitRequestFullscreen()
-                : elem.msRequestFullscreen ? elem.msRequestFullscreen()
-                : Promise.resolve();
-            
-            // Then start the experiment
-            fullscreenPromise
-                .then(() => {
-                    console.log('Entered fullscreen');
-                    startExperiment();
-                })
-                .catch(err => {
-                    console.warn('Fullscreen failed, starting experiment anyway:', err);
-                    startExperiment();
-                });
-        }
-        
-        async function testPumpCommand() {
-            logDebug("Testing pump command...");
-            await sendPumpCommand(100);
-            logDebug("Test complete - check if pump triggered");
-        }
-        document.getElementById('test-pump-btn').addEventListener('click', testPumpCommand);
-    </script>
-    
-    <!-- Debug Logger (MUST BE LAST) -->
-    <script>
-        const debugLog = document.getElementById('debug-log');
-        
-        const originalLog = console.log;
-        console.log = function(...args) {
-            originalLog.apply(console, args);
-            const message = args.map(arg => {
-                if (typeof arg === 'object') {
-                    try {
-                        return JSON.stringify(arg);
-                    } catch(e) {
-                        return String(arg);
-                    }
-                }
-                return String(arg);
-            }).join(' ');
-            debugLog.innerHTML += message + '<br>';
-            debugLog.scrollTop = debugLog.scrollHeight;
-        };
-        
-        const originalError = console.error;
-        console.error = function(...args) {
-            originalError.apply(console, args);
-            const message = args.map(arg => {
-                if (typeof arg === 'object') {
-                    try {
-                        return JSON.stringify(arg);
-                    } catch(e) {
-                        return String(arg);
-                    }
-                }
-                return String(arg);
-            }).join(' ');
-            debugLog.innerHTML += '<span style="color:red">' + message + '</span><br>';
-            debugLog.scrollTop = debugLog.scrollHeight;
-        };
-        
-        window.onerror = function(msg, url, line) {
-            debugLog.innerHTML += '<span style="color:red">ERROR: ' + msg + ' (line ' + line + ')</span><br>';
-        };
-        
-        console.log('Debug logger initialized!');
-    </script>
-    
-    <!-- Button Event Handlers -->
-    <script>
-        document.getElementById('test-pump-button').addEventListener('click', async function() {
-            console.log("Test pump button clicked");
-            await writepumpdurationtoBLE(100);
-        });
-        
-        document.getElementById('clear-storage-button').addEventListener('click', function() {
-            localStorage.clear();
-            sessionStorage.clear();
-            console.log('Storage cleared! Refreshing page...');
-            alert('Storage cleared! Page will refresh.');
-            window.location.reload();
-        });
-        
-        // ADD THIS - Connect Bluetooth button handler
-        document.getElementById('connect-ble-button').addEventListener('click', async function() {
-            console.log('Connect Bluetooth button clicked');
-            
-            try {
-                console.log('Requesting BLE device...');
-                await requestBLEDevice();
-                
-                console.log('Connecting to device...');
-                await connectBLEDeviceAndCacheCharacteristics();
-                
-                document.getElementById('ble-status').innerHTML = 'Connected!';
-                document.getElementById('ble-status').style.color = 'green';
-                console.log('BLE connected successfully');
-                
-            } catch (error) {
-                console.error('BLE connection error:', error);
-                console.error('Error name:', error.name);
-                console.error('Error message:', error.message);
-                document.getElementById('ble-status').innerHTML = 'Connection failed';
-                document.getElementById('ble-status').style.color = 'red';
+        document.getElementById('experiment-select').addEventListener('change', function() {
+            if (this.value) {
+                loadExperimentScript(this.value);
             }
         });
-        
-        document.getElementById('start-button').addEventListener('click', async function() {
-            // Check experiment selection
-            const experimentSelect = document.getElementById('experiment-select');
-            const experimentType = experimentSelect.value;
-            
-            if (!experimentType) {
-                alert('Please select an experiment type first!');
-                return;
-            }
-            
-            // Load the appropriate experiment script if not already loaded
-            if (!experimentLoaded) {
-                try {
-                    await loadExperimentScript(experimentType);
-                } catch (error) {
-                    console.error('Error loading experiment:', error);
-                    alert('Failed to load experiment. Check console.');
-                    return;
-                }
-            }
-            
-            // Call startExperiment() which is defined in the loaded script
-            if (typeof startExperiment === 'function') {
-                startExperiment();
-            } else {
-                console.error('startExperiment function not found');
-                alert('Experiment script error. Check console.');
-            }
-        });
-        
-        document.getElementById('feather-connect-btn').addEventListener('click', async function() {
-            if (device) {
-                await disconnectFeather();
-                this.textContent = 'Connect Feather (USB)';
-            } else {
-                const connected = await connectToFeather();
-                this.textContent = connected ? 'Disconnect Feather' : 'Connect Feather (USB)';
-            }
-        });
-        
     </script>
 
+    <!-- ========================================
+         EVENT LISTENERS
+         ======================================== -->
     <script>
         // Toggle debug console visibility
         document.getElementById('toggle-debug-btn').addEventListener('click', function() {
@@ -554,120 +472,60 @@
             debugLog.style.display = isHidden ? 'block' : 'none';
             this.textContent = isHidden ? 'Hide Debug' : 'Show Debug';
         });
-        async function endExperiment() {
-            console.log('Experiment complete!');
-            await saveDataToDropbox();
-            document.body.classList.remove('experiment-running');
-            document.getElementById('experiment-container').style.display = 'none';
-            document.getElementById('completion').style.display = 'block';
-            
-            // Exit fullscreen
-            if (document.fullscreenElement) {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                } else if (document.msExitFullscreen) {
-                    document.msExitFullscreen();
-                }
+
+        // Fullscreen functionality
+        document.getElementById('fullscreen-btn').addEventListener('click', function() {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen();
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
             }
+        });
+
+        // Start experiment with fullscreen
+        function requestFullscreenThenStart() {
+            const elem = document.documentElement;
+            
+            const fullscreenPromise = elem.requestFullscreen ? elem.requestFullscreen()
+                : elem.webkitRequestFullscreen ? elem.webkitRequestFullscreen()
+                : elem.msRequestFullscreen ? elem.msRequestFullscreen()
+                : Promise.resolve();
+            
+            fullscreenPromise
+                .then(() => {
+                    logDebug('Entered fullscreen');
+                    startExperiment();
+                })
+                .catch(err => {
+                    logDebug('Fullscreen failed, starting experiment anyway');
+                    startExperiment();
+                });
         }
 
-// ========================================
-// WebUSB - Feather 32u4 Communication
-// ========================================
+        document.getElementById('start-button').addEventListener('click', requestFullscreenThenStart);
 
-async function connectToFeather() {
-    try {
-        const devices = await navigator.usb.getDevices();
-        
-        if (devices.length > 0) {
-            device = devices[0];
-            logDebug("Found existing device");
-        } else {
-            logDebug("Requesting new device...");
-            device = await navigator.usb.requestDevice({ filters: [] });
-        }
-        
-        if (!device) {
-            logDebug('No device selected');
-            return false;
-        }
-        
-        logDebug("Opening device...");
-        await device.open();
-        
-        logDebug("Selecting configuration...");
-        await device.selectConfiguration(1);
-        
-        logDebug("Claiming interface...");
-        await device.claimInterface(2);
-        
-        logDebug("Connected to Feather!");
-        document.getElementById('connection-status').innerHTML = '🟢 Feather Connected';
-        document.getElementById('connection-status').style.color = 'green';
-        
-        return true;
-    } catch (error) {
-        logDebug(`Connection error: ${error.message}`);
-        document.getElementById('connection-status').innerHTML = '🔴 Feather Not Found';
-        document.getElementById('connection-status').style.color = 'red';
-        return false;
-    }
-}
+        // Feather USB connection
+        document.getElementById('feather-connect-btn').addEventListener('click', async function() {
+            if (window.device) {
+                await disconnectFeather();
+                this.textContent = 'Connect Feather (USB)';
+            } else {
+                const connected = await connectToFeather();
+                this.textContent = connected ? 'Disconnect Feather' : 'Connect Feather (USB)';
+            }
+        });
 
-async function sendPumpCommand(durationMs) {
-    logDebug(`sendPumpCommand called: ${durationMs}ms`);
-    
-    if (!device) {
-        logDebug('Feather not connected');
-        return false;
-    }
-    
-    try {
-        const command = `{${durationMs}}`;
-        logDebug(`Sending: ${command}`);
-        
-        const encoder = new TextEncoder();
-        const data = encoder.encode(command);
-        logDebug(`Data length: ${data.length} bytes`);
-        
-        await device.transferOut(1, data);
-        
-        logDebug(`✓ Pump command sent`);
-        return true;
-    } catch (error) {
-        logDebug(`✗ Pump error: ${error.message}`);
-        return false;
-    }
-}
+        // Test pump button
+        document.getElementById('test-pump-btn').addEventListener('click', testPumpCommand);
 
-async function disconnectFeather() {
-    if (device) {
-        try {
-            await device.close();
-        } catch (error) {
-            logDebug(`Close error: ${error.message}`);
-        }
-        device = null;
-        logDebug("Feather disconnected");
-        document.getElementById('connection-status').innerHTML = '🔴 Feather Disconnected';
-        document.getElementById('connection-status').style.color = 'red';
-    }
-}
-
-    </script>
-    <!-- Debug output display -->
-    <div id="debug-output" style="position: fixed; top: 50px; right: 10px; background: black; color: lime; padding: 10px; font-size: 10px; max-width: 200px; max-height: 150px; overflow-y: auto; border: 1px solid lime; z-index: 10000; display: none;">
-    </div>
-    
-    <script>
-    function logDebug(message) {
-        console.log(message);
-        const debugDiv = document.getElementById('debug-output');
-        debugDiv.innerHTML += message + '<br>';
-        debugDiv.style.display = 'block';
-    }
+        // Clear token button
+        document.getElementById('clear-token-btn').addEventListener('click', function() {
+            localStorage.removeItem('dropbox_access_token');
+            alert('Dropbox token cleared. Refresh the page to re-authorize.');
+        });
     </script>
 </body>
 </html>
